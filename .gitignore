@@ -1,0 +1,14 @@
+# Java
+*.class
+/build
+/.gradle
+# IDE
+.idea/
+*.iml
+# Logs
+*.log
+# OS
+.DS_Store
+Thumbs.db
+# OneDrive
+~\$*
