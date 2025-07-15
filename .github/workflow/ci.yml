@@ -1,0 +1,26 @@
+name: CI    # Workflow adı; GitHub Actions panelinde gözükecek
+
+on:
+  push:
+    branches: [ main, feature/* ]      # main veya feature/ ile başlayan dallara push olunca tetiklenir
+  pull_request:
+    branches: [ main ]                # main hedefli PR açılınca tetiklenir
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest            # Sanal makine olarak Ubuntu kullan
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3     # Kaynak kodu GitHub reposundan çek
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3   # Java 21’i kur
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Grant execute permission for Gradlew
+        run: chmod +x gradlew         # Linux’ta gradlew script’ini çalıştırılabilir yap
+
+      - name: Build & Test with Gradle
+        run: ./gradlew clean build --no-daemon

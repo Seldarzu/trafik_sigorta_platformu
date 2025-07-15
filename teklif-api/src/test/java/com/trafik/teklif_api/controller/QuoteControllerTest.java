@@ -1,54 +1,62 @@
-// src/test/java/com/trafik/teklif_api/controller/CustomerControllerTest.java
 package com.trafik.teklif_api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.trafik.teklif_api.dto.CreateCustomerRequest;
-import com.trafik.teklif_api.dto.CustomerResponse;
-import com.trafik.teklif_api.service.CustomerService;
+import com.trafik.teklif_api.dto.CreateQuoteRequest;
+import com.trafik.teklif_api.dto.QuoteResponse;
+import com.trafik.teklif_api.service.QuoteService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(CustomerController.class)
-class CustomerControllerTest {
+@WebMvcTest(QuoteController.class)
+class QuoteControllerTest {
 
     @Autowired
     MockMvc mvc;
 
-    @MockBean
-    CustomerService service;
-
     @Autowired
     ObjectMapper om;
 
+    @MockitoBean
+    QuoteService service;
+
     @Test
-    void postCustomer_returnsCreated() throws Exception {
-        // Arrange
-        CreateCustomerRequest req = new CreateCustomerRequest();
-        req.setTcNo("12345678901");
-        req.setName("Test User");
+    void getQuotes_returnsList() throws Exception {
+        var mockList = List.of(
+            new QuoteResponse(10L, 1L, 5, new java.math.BigDecimal("50"), "OK", "REF1", java.time.LocalDateTime.now()),
+            new QuoteResponse(20L, 2L, 8, new java.math.BigDecimal("80"), "OK", "REF2", java.time.LocalDateTime.now())
+        );
+        when(service.listAll()).thenReturn(mockList);
 
-        CustomerResponse mockResp = new CustomerResponse();
-        mockResp.setId(1L);
-        mockResp.setTcNo(req.getTcNo());
-        mockResp.setName(req.getName());
-        when(service.create(any())).thenReturn(mockResp);
+        mvc.perform(get("/api/quotes"))
+           .andExpect(status().isOk())
+           .andExpect(jsonPath("$.length()").value(2))
+           .andExpect(jsonPath("$[0].id").value(10))
+           .andExpect(jsonPath("$[1].id").value(20));
+    }
 
-        // Act & Assert
-        mvc.perform(post("/api/customers")
+    @Test
+    void postQuote_returnsCreated() throws Exception {
+        var req = new CreateQuoteRequest(42L, null, null);
+        var resp = new QuoteResponse(100L, 42L, 50, new java.math.BigDecimal("500"), "PENDING", "Q123", java.time.LocalDateTime.now());
+        when(service.createQuote(any())).thenReturn(resp);
+
+        mvc.perform(post("/api/quotes")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(om.writeValueAsString(req)))
            .andExpect(status().isCreated())
-           .andExpect(jsonPath("$.id").value(1))
-           .andExpect(jsonPath("$.tcNo").value("12345678901"))
-           .andExpect(jsonPath("$.name").value("Test User"));
+           .andExpect(jsonPath("$.id").value(100))
+           .andExpect(jsonPath("$.customerId").value(42))
+           .andExpect(jsonPath("$.status").value("PENDING"));
     }
 }
