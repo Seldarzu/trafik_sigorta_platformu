@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Search, Filter, Eye, Download, ChevronDown } from 'lucide-react';
+import { Search, Filter, Eye, Download, ChevronDown, GitCompare, X } from 'lucide-react';
 import { Quote, FilterOptions } from '../../types';
 import QuoteCard from './QuoteCard';
+import QuoteComparison from './QuoteComparison';
 
 interface QuoteListProps {
   onQuoteSelect: (quote: Quote) => void;
@@ -10,6 +11,8 @@ interface QuoteListProps {
 const QuoteList: React.FC<QuoteListProps> = ({ onQuoteSelect }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedQuotes, setSelectedQuotes] = useState<Quote[]>([]);
+  const [showComparison, setShowComparison] = useState(false);
   const [filters, setFilters] = useState<FilterOptions>({
     status: '',
     riskLevel: '',
@@ -165,6 +168,23 @@ const QuoteList: React.FC<QuoteListProps> = ({ onQuoteSelect }) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
+  const toggleQuoteSelection = (quote: Quote) => {
+    setSelectedQuotes(prev => {
+      const isSelected = prev.find(q => q.id === quote.id);
+      if (isSelected) {
+        return prev.filter(q => q.id !== quote.id);
+      } else if (prev.length < 3) {
+        return [...prev, quote];
+      }
+      return prev;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedQuotes([]);
+    setShowComparison(false);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
@@ -282,6 +302,54 @@ const QuoteList: React.FC<QuoteListProps> = ({ onQuoteSelect }) => {
         </div>
       </div>
 
+      {/* Comparison Bar */}
+      {selectedQuotes.length > 0 && (
+        <div className="mb-6 bg-gradient-to-r from-blue-500 to-purple-500 p-4 rounded-xl text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <GitCompare className="h-6 w-6" />
+              <div>
+                <h3 className="font-semibold">Karşılaştırma Modu</h3>
+                <p className="text-sm opacity-90">
+                  {selectedQuotes.length} teklif seçildi (maksimum 3)
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              {selectedQuotes.length >= 2 && (
+                <button
+                  onClick={() => setShowComparison(true)}
+                  className="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors duration-200"
+                >
+                  Karşılaştır
+                </button>
+              )}
+              <button
+                onClick={clearSelection}
+                className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition-colors duration-200"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+          
+          {/* Selected Quotes Preview */}
+          <div className="mt-3 flex space-x-3">
+            {selectedQuotes.map((quote) => (
+              <div key={quote.id} className="bg-white/20 px-3 py-2 rounded-lg flex items-center space-x-2">
+                <span className="text-sm font-medium">{quote.id}</span>
+                <button
+                  onClick={() => toggleQuoteSelection(quote)}
+                  className="hover:bg-white/20 p-1 rounded-full"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Quote Cards */}
       <div className="space-y-4">
         {filteredQuotes.map((quote) => (
@@ -289,6 +357,9 @@ const QuoteList: React.FC<QuoteListProps> = ({ onQuoteSelect }) => {
             key={quote.id}
             quote={quote}
             onSelect={onQuoteSelect}
+            onToggleCompare={toggleQuoteSelection}
+            isSelected={selectedQuotes.some(q => q.id === quote.id)}
+            canSelect={selectedQuotes.length < 3 || selectedQuotes.some(q => q.id === quote.id)}
           />
         ))}
       </div>
@@ -303,6 +374,14 @@ const QuoteList: React.FC<QuoteListProps> = ({ onQuoteSelect }) => {
             Arama kriterlerinizi değiştirerek tekrar deneyin.
           </p>
         </div>
+      )}
+
+      {/* Comparison Modal */}
+      {showComparison && selectedQuotes.length >= 2 && (
+        <QuoteComparison
+          quotes={selectedQuotes}
+          onClose={() => setShowComparison(false)}
+        />
       )}
     </div>
   );

@@ -1,13 +1,22 @@
 import React from 'react';
-import { Eye, Download, Calendar, Car, User, DollarSign, AlertTriangle } from 'lucide-react';
+import { Eye, Download, Calendar, Car, User, DollarSign, AlertTriangle, GitCompare, Check } from 'lucide-react';
 import { Quote } from '../../types';
 
 interface QuoteCardProps {
   quote: Quote;
   onSelect: (quote: Quote) => void;
+  onToggleCompare?: (quote: Quote) => void;
+  isSelected?: boolean;
+  canSelect?: boolean;
 }
 
-const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onSelect }) => {
+const QuoteCard: React.FC<QuoteCardProps> = ({ 
+  quote, 
+  onSelect, 
+  onToggleCompare, 
+  isSelected = false, 
+  canSelect = true 
+}) => {
   const getRiskLevelColor = (level: string) => {
     switch (level) {
       case 'low':
@@ -72,7 +81,9 @@ const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onSelect }) => {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+    <div className={`bg-white border rounded-lg shadow-sm hover:shadow-md transition-all duration-200 ${
+      isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+    }`}>
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
@@ -93,6 +104,22 @@ const QuoteCard: React.FC<QuoteCardProps> = ({ quote, onSelect }) => {
             )}
           </div>
           <div className="flex items-center space-x-2">
+            {onToggleCompare && (
+              <button
+                onClick={() => onToggleCompare(quote)}
+                disabled={!canSelect && !isSelected}
+                className={`p-2 rounded-full transition-colors duration-200 ${
+                  isSelected
+                    ? 'text-blue-600 bg-blue-100 hover:bg-blue-200'
+                    : canSelect
+                    ? 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                    : 'text-gray-300 cursor-not-allowed'
+                }`}
+                title={isSelected ? 'Karşılaştırmadan çıkar' : 'Karşılaştırmaya ekle'}
+              >
+                {isSelected ? <Check className="h-5 w-5" /> : <GitCompare className="h-5 w-5" />}
+              </button>
+            )}
             <button
               onClick={() => onSelect(quote)}
               className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors duration-200"
