@@ -1,7 +1,9 @@
 package com.trafik.teklif_api.dto;
 
+import jakarta.validation.constraints.NotNull;
+
 public record CreateQuoteRequest(
-    Long customerId,
-    Integer riskScore,
-    Double premiumAmount
+    @NotNull Long customerId,
+    @NotNull Integer riskScore,
+    @NotNull Double premiumAmount
 ) {}

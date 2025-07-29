@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
-import { Search, Filter, Plus, Eye, Edit, Phone, Mail, MapPin, Star, TrendingUp, Users, Award } from 'lucide-react';
+// src/components/Customers/CustomerManagement.tsx
+import React, { useState, useMemo } from 'react';
+import {
+  Search,
+  Plus,
+  Users,
+  TrendingUp,
+  Award,
+  Star
+} from 'lucide-react';
 import { Customer } from '../../types';
+import { useCustomers } from '../../hooks/useCustomers';
 import CustomerCard from './CustomerCard';
 import CustomerModal from './CustomerModal';
 import CustomerDetailModal from './CustomerDetailModal';
 
-interface CustomerManagementProps {
-  onPageChange: (page: string) => void;
-}
-
-const CustomerManagement: React.FC<CustomerManagementProps> = ({ onPageChange }) => {
+const CustomerManagement: React.FC = () => {
+  const { data: customers, loading, error } = useCustomers();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -17,134 +23,73 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ onPageChange })
   const [filterStatus, setFilterStatus] = useState('');
   const [filterValue, setFilterValue] = useState('');
 
-  // Mock data
-  const customers: Customer[] = [
-    {
-      id: 'C-001',
-      firstName: 'Mehmet',
-      lastName: 'Özkan',
-      email: 'mehmet.ozkan@email.com',
-      phone: '+90 532 123 4567',
-      tcNumber: '12345678901',
-      birthDate: '1985-05-15',
-      address: 'Atatürk Cad. No:123 Daire:5',
-      city: 'İstanbul',
-      registrationDate: '2023-01-15',
-      totalPolicies: 3,
-      totalPremium: 7350,
-      lastPolicyDate: '2024-01-16',
-      status: 'active',
-      riskProfile: 'low',
-      customerValue: 'gold',
-      notes: 'Güvenilir müşteri, zamanında ödeme yapar.'
-    },
-    {
-      id: 'C-002',
-      firstName: 'Ayşe',
-      lastName: 'Demir',
-      email: 'ayse.demir@email.com',
-      phone: '+90 533 987 6543',
-      tcNumber: '12345678902',
-      birthDate: '1992-03-10',
-      address: 'Cumhuriyet Mah. Barış Sok. No:45',
-      city: 'Ankara',
-      registrationDate: '2023-06-20',
-      totalPolicies: 1,
-      totalPremium: 3200,
-      lastPolicyDate: '2024-01-15',
-      status: 'active',
-      riskProfile: 'medium',
-      customerValue: 'silver',
-      notes: 'Yeni müşteri, potansiyeli yüksek.'
-    },
-    {
-      id: 'C-003',
-      firstName: 'Ali',
-      lastName: 'Kaya',
-      email: 'ali.kaya@email.com',
-      phone: '+90 534 555 1234',
-      tcNumber: '12345678903',
-      birthDate: '1978-11-22',
-      address: 'Yenişehir Mah. Gül Cad. No:78',
-      city: 'İzmir',
-      registrationDate: '2022-03-10',
-      totalPolicies: 5,
-      totalPremium: 12450,
-      lastPolicyDate: '2024-01-14',
-      status: 'active',
-      riskProfile: 'medium',
-      customerValue: 'platinum',
-      notes: 'VIP müşteri, çoklu poliçe sahibi.'
-    },
-    {
-      id: 'C-004',
-      firstName: 'Fatma',
-      lastName: 'Yılmaz',
-      email: 'fatma.yilmaz@email.com',
-      phone: '+90 535 777 8899',
-      tcNumber: '12345678904',
-      birthDate: '1990-07-08',
-      address: 'Merkez Mah. Atatürk Blv. No:156',
-      city: 'Bursa',
-      registrationDate: '2023-11-05',
-      totalPolicies: 0,
-      totalPremium: 0,
-      lastPolicyDate: '',
-      status: 'potential',
-      riskProfile: 'low',
-      customerValue: 'bronze',
-      notes: 'Teklif aldı, takip edilmeli.'
-    }
-  ];
+  const filteredCustomers = useMemo(() => {
+    if (!customers) return [];
+    return customers.filter((customer) => {
+      const fullName = `${customer.firstName} ${customer.lastName}`.toLowerCase();
+      const term = searchTerm.toLowerCase();
+      const matchesSearch =
+        fullName.includes(term) ||
+        customer.email.toLowerCase().includes(term) ||
+        customer.phone.includes(searchTerm) ||
+        customer.id.toLowerCase().includes(term);
 
-  const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = 
-      `${customer.firstName} ${customer.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.includes(searchTerm) ||
-      customer.id.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = !filterStatus || customer.status === filterStatus;
+      const matchesValue = !filterValue || customer.customerValue === filterValue;
 
-    const matchesStatus = !filterStatus || customer.status === filterStatus;
-    const matchesValue = !filterValue || customer.customerValue === filterValue;
+      return matchesSearch && matchesStatus && matchesValue;
+    });
+  }, [customers, searchTerm, filterStatus, filterValue]);
 
-    return matchesSearch && matchesStatus && matchesValue;
-  });
+  const stats = useMemo(() => {
+    if (!customers) return [];
+    return [
+      {
+        title: 'Toplam Müşteri',
+        value: customers.length.toString(),
+        icon: Users,
+        color: 'from-blue-500 to-cyan-500',
+        change: '+12%'
+      },
+      {
+        title: 'Aktif Müşteri',
+        value: customers.filter(c => c.status === 'active').length.toString(),
+        icon: TrendingUp,
+        color: 'from-green-500 to-emerald-500',
+        change: '+8%'
+      },
+      {
+        title: 'VIP Müşteri',
+        value: customers.filter(
+          c => c.customerValue === 'platinum' || c.customerValue === 'gold'
+        ).length.toString(),
+        icon: Award,
+        color: 'from-purple-500 to-pink-500',
+        change: '+15%'
+      },
+      {
+        title: 'Potansiyel Müşteri',
+        value: customers.filter(c => c.status === 'potential').length.toString(),
+        icon: Star,
+        color: 'from-orange-500 to-red-500',
+        change: '+25%'
+      }
+    ];
+  }, [customers]);
 
-  const stats = [
-    {
-      title: 'Toplam Müşteri',
-      value: customers.length.toString(),
-      icon: Users,
-      color: 'from-blue-500 to-cyan-500',
-      change: '+12%'
-    },
-    {
-      title: 'Aktif Müşteri',
-      value: customers.filter(c => c.status === 'active').length.toString(),
-      icon: TrendingUp,
-      color: 'from-green-500 to-emerald-500',
-      change: '+8%'
-    },
-    {
-      title: 'VIP Müşteri',
-      value: customers.filter(c => c.customerValue === 'platinum' || c.customerValue === 'gold').length.toString(),
-      icon: Award,
-      color: 'from-purple-500 to-pink-500',
-      change: '+15%'
-    },
-    {
-      title: 'Potansiyel Müşteri',
-      value: customers.filter(c => c.status === 'potential').length.toString(),
-      icon: Star,
-      color: 'from-orange-500 to-red-500',
-      change: '+25%'
-    }
-  ];
+  if (loading) {
+    return <div className="p-8 text-center">Yükleniyor…</div>;
+  }
+  if (error) {
+    return <div className="p-8 text-center text-red-600">Hata: {error.message}</div>;
+  }
+  if (!customers) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mb-4">
             <Users className="h-8 w-8 text-white" />
@@ -152,15 +97,19 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ onPageChange })
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Müşteri Yönetimi
           </h1>
-          <p className="mt-2 text-lg text-gray-600">Müşterilerinizi yönetin ve ilişkilerinizi güçlendirin</p>
+          <p className="mt-2 text-lg text-gray-600">
+            Müşterilerinizi yönetin ve ilişkilerinizi güçlendirin
+          </p>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat) => {
             const Icon = stat.icon;
             return (
-              <div key={stat.title} className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+              <div
+                key={stat.title}
+                className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold text-gray-600 mb-2">{stat.title}</p>
@@ -176,7 +125,6 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ onPageChange })
           })}
         </div>
 
-        {/* Search and Filters */}
         <div className="bg-white p-6 rounded-xl shadow-lg mb-8">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1 relative">
@@ -189,7 +137,7 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ onPageChange })
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
               />
             </div>
-            
+
             <div className="flex gap-4">
               <select
                 value={filterStatus}
@@ -201,7 +149,7 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ onPageChange })
                 <option value="inactive">Pasif</option>
                 <option value="potential">Potansiyel</option>
               </select>
-              
+
               <select
                 value={filterValue}
                 onChange={(e) => setFilterValue(e.target.value)}
@@ -213,7 +161,7 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ onPageChange })
                 <option value="silver">Silver</option>
                 <option value="bronze">Bronze</option>
               </select>
-              
+
               <button
                 onClick={() => {
                   setSelectedCustomer(null);
@@ -228,18 +176,17 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ onPageChange })
           </div>
         </div>
 
-        {/* Customer Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredCustomers.map((customer) => (
             <CustomerCard
               key={customer.id}
               customer={customer}
-              onEdit={(customer) => {
-                setSelectedCustomer(customer);
+              onEdit={(c) => {
+                setSelectedCustomer(c);
                 setShowModal(true);
               }}
-              onView={(customer) => {
-                setSelectedCustomer(customer);
+              onView={(c) => {
+                setSelectedCustomer(c);
                 setShowDetailModal(true);
               }}
             />
@@ -252,9 +199,7 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ onPageChange })
               <Users className="h-16 w-16 mx-auto" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Müşteri bulunamadı</h3>
-            <p className="text-gray-600 mb-6">
-              Arama kriterlerinizi değiştirerek tekrar deneyin.
-            </p>
+            <p className="text-gray-600 mb-6">Arama kriterlerinizi değiştirerek tekrar deneyin.</p>
             <button
               onClick={() => {
                 setSelectedCustomer(null);
@@ -268,7 +213,6 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ onPageChange })
           </div>
         )}
 
-        {/* Customer Modal */}
         {showModal && (
           <CustomerModal
             customer={selectedCustomer}
@@ -276,16 +220,9 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ onPageChange })
               setShowModal(false);
               setSelectedCustomer(null);
             }}
-            onSave={(customer) => {
-              // Handle save
-              console.log('Saving customer:', customer);
-              setShowModal(false);
-              setSelectedCustomer(null);
-            }}
           />
         )}
 
-        {/* Customer Detail Modal */}
         {showDetailModal && selectedCustomer && (
           <CustomerDetailModal
             customer={selectedCustomer}

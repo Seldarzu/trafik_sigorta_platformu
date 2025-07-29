@@ -1,6 +1,69 @@
+// src/types/index.ts
 
+// OVERVIEW
+export interface OverviewData {
+  totalRevenue: number;
+  totalPolicies: number;
+  conversionRate: number;
+  averagePremium: number;
+}
+
+// MONTHLY DATA
+export interface MonthlyData {
+  month: string;
+  revenue: number;
+  policies: number;
+  quotes: number;
+}
+
+// RISK DISTRIBUTION
+export interface RiskDistribution {
+  level: string;
+  count: number;
+  percentage: number;
+  color: string;
+}
+
+// TOP VEHICLE BRANDS
+export interface BrandData {
+  brand: string;
+  count: number;
+  revenue: number;
+}
+
+// CUSTOMER SEGMENTS
+export interface SegmentData {
+  segment: string;
+  count: number;
+  value: number;
+  color: string;
+}
+
+// PERFORMANCE METRICS
+export interface PerformanceMetric {
+  metric: string;
+  current: number;
+  previous: number;
+  target: number;
+  unit: string;
+}
+
+// ANALYTICS DATA
+export interface AnalyticsData {
+  totalRevenue: number;
+  totalPolicies: number;
+  conversionRate: number;
+  averagePremium: number;
+  monthlyData: MonthlyData[];
+  riskDistribution: RiskDistribution[];
+  topVehicleBrands: BrandData[];
+  customerSegments: SegmentData[];
+  performanceMetrics: PerformanceMetric[];
+}
+
+// VEHICLE
 export interface Vehicle {
-  id?: string;
+  id: string;
   plateNumber: string;
   brand: string;
   model: string;
@@ -10,9 +73,68 @@ export interface Vehicle {
   usage: 'personal' | 'commercial' | 'taxi' | 'truck';
   cityCode: string;
 }
+export interface CreateVehicleDto {
+  plateNumber: string;
+  brand: string;
+  model: string;
+  year: number;
+  engineSize: string;
+  fuelType: Vehicle['fuelType'];
+  usage: Vehicle['usage'];
+  cityCode: string;
+}
 
+// NOTIFICATIONS
+export interface NotificationSettings {
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+  pushNotifications: boolean;
+  quoteExpiry: boolean;
+  newCustomer: boolean;
+  policyRenewal: boolean;
+  systemUpdates: boolean;
+  marketingEmails: boolean;
+  weeklyReports: boolean;
+  monthlyReports: boolean;
+}
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  isRead: boolean;
+  createdAt: string;
+  actionUrl?: string;
+  actionText?: string;
+}
+
+// USER & SETTINGS
+export interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+}
+export interface UpdateUserDto {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+}
+export interface SystemSettings {
+  language: 'tr' | 'en';
+  timezone: string;
+  currency: 'TRY' | 'USD' | 'EUR';
+  dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
+  theme: 'light' | 'dark' | 'auto';
+  autoSave: boolean;
+  sessionTimeout: number;
+}
+
+// DRIVER
 export interface Driver {
-  id?: string;
+  id: string;
   firstName: string;
   lastName: string;
   tcNumber: string;
@@ -27,48 +149,23 @@ export interface Driver {
   hasViolations: boolean;
   violationCount: number;
 }
+export interface CreateDriverDto extends Omit<Driver, 'id'> {}
 
-export interface Discount {
-  type: 'no_claim' | 'young_driver' | 'safe_driver' | 'multi_policy' | 'online';
-  name: string;
-  percentage: number;
-  amount: number;
-}
-
+// QUOTE
 export interface Quote {
   id: string;
-  vehicle: Vehicle;
-  driver: Driver;
-  premium: number;
-  coverageAmount: number;
+  customerId: string;
   riskScore: number;
-  riskLevel: 'low' | 'medium' | 'high';
-  validUntil: string;
+  premiumAmount: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt: string;
-  status: 'draft' | 'active' | 'expired' | 'sold';
-  agentId: string;
-  companyName: string;
-  discounts: Discount[];
-  totalDiscount: number;
-  finalPremium: number;
+  refNo: string;
+}
+export interface CreateQuoteDto {
+  customerId: string;
 }
 
-export interface QuoteFormData {
-  vehicle: Partial<Vehicle>;
-  driver: Partial<Driver>;
-  currentStep: number;
-}
-
-export interface FilterOptions {
-  status: string;
-  riskLevel: string;
-  dateRange: string;
-  minPremium: number;
-  maxPremium: number;
-  sortBy: string;
-  sortOrder: 'asc' | 'desc';
-}
-
+// CUSTOMER
 export interface Customer {
   id: string;
   firstName: string;
@@ -89,123 +186,18 @@ export interface Customer {
   notes: string;
 }
 
-export interface AnalyticsData {
-  totalRevenue: number;
-  totalPolicies: number;
-  conversionRate: number;
-  averagePremium: number;
-  monthlyData: MonthlyData[];
-  riskDistribution: RiskDistribution[];
-  topVehicleBrands: BrandData[];
-  customerSegments: CustomerSegment[];
-  performanceMetrics: PerformanceMetric[];
-}
-
-export interface MonthlyData {
-  month: string;
-  revenue: number;
-  policies: number;
-  quotes: number;
-}
-
-export interface RiskDistribution {
-  level: string;
-  count: number;
-  percentage: number;
-  color: string;
-}
-
-export interface BrandData {
-  brand: string;
-  count: number;
-  revenue: number;
-}
-
-export interface CustomerSegment {
-  segment: string;
-  count: number;
-  value: number;
-  color: string;
-}
-
-export interface PerformanceMetric {
-  metric: string;
-  current: number;
-  previous: number;
-  target: number;
-  unit: string;
-}
-
-export interface UserProfile {
-  id: string;
+// DTO for creating/updating a customer
+export interface CreateCustomerDto {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
-  avatar?: string;
-  role: 'agent' | 'manager' | 'admin';
-  agencyName: string;
-  agencyCode: string;
-  licenseNumber: string;
-  joinDate: string;
-  lastLogin: string;
-  isActive: boolean;
-}
-
-export interface NotificationSettings {
-  emailNotifications: boolean;
-  smsNotifications: boolean;
-  pushNotifications: boolean;
-  quoteExpiry: boolean;
-  newCustomer: boolean;
-  policyRenewal: boolean;
-  systemUpdates: boolean;
-  marketingEmails: boolean;
-  weeklyReports: boolean;
-  monthlyReports: boolean;
-}
-
-export interface SystemSettings {
-  language: 'tr' | 'en';
-  timezone: string;
-  currency: 'TRY' | 'USD' | 'EUR';
-  dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
-  theme: 'light' | 'dark' | 'auto';
-  autoSave: boolean;
-  sessionTimeout: number;
-}
-
-export interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  isRead: boolean;
-  createdAt: string;
-  actionUrl?: string;
-  actionText?: string;
-}
-
-// frontend/project/src/types/index.ts
-
-export interface CustomerResponse {
-  id: number;
-  tcNo: string;
-  name: string;
-  birthDate: string;
-  phone: string;
-}
-
-export interface CreateQuoteRequest {
-  customerId: number;
-}
-
-export interface QuoteResponse {
-  id: number;
-  refNo: string;
-  createdAt: string;
-  customerId: number;
-  riskScore: number;
-  premiumAmount: number;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  tcNumber: string;
+  birthDate: string;       // "YYYY-MM-DD"
+  address?: string;
+  city?: string;
+  status: 'potential' | 'active' | 'inactive';
+  riskProfile: 'low' | 'medium' | 'high';
+  customerValue: 'bronze' | 'silver' | 'gold' | 'platinum';
+  notes?: string;
 }

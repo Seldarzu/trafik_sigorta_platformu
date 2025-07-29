@@ -1,85 +1,56 @@
+// src/components/Analytics/Analytics.tsx
 import React, { useState } from 'react';
-import { BarChart3, TrendingUp, DollarSign, Users, Target, Calendar, Award, Zap } from 'lucide-react';
-import { AnalyticsData } from '../../types';
+import { BarChart3, TrendingUp, DollarSign, Users, Target, Award, Zap } from 'lucide-react';
 import RevenueChart from './RevenueChart';
 import RiskDistributionChart from './RiskDistributionChart';
 import PerformanceMetrics from './PerformanceMetrics';
 import TopBrands from './TopBrands';
+import { useAnalytics } from '../../hooks/useAnalytics';
 
 const Analytics: React.FC = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState('month');
+  const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
+  const {
+    summary,
+    monthlyData,
+    riskDistribution,
+    topVehicleBrands,
+    customerSegments,
+    performanceMetrics,
+    loading,
+    error
+  } = useAnalytics(selectedPeriod);
 
-  // Mock analytics data
-  const analyticsData: AnalyticsData = {
-    totalRevenue: 2456780,
-    totalPolicies: 1247,
-    conversionRate: 67.8,
-    averagePremium: 1970,
-    monthlyData: [
-      { month: 'Oca', revenue: 180000, policies: 89, quotes: 145 },
-      { month: 'Şub', revenue: 220000, policies: 112, quotes: 178 },
-      { month: 'Mar', revenue: 195000, policies: 98, quotes: 156 },
-      { month: 'Nis', revenue: 240000, policies: 125, quotes: 189 },
-      { month: 'May', revenue: 280000, policies: 142, quotes: 201 },
-      { month: 'Haz', revenue: 310000, policies: 158, quotes: 234 },
-      { month: 'Tem', revenue: 290000, policies: 147, quotes: 218 },
-      { month: 'Ağu', revenue: 325000, policies: 165, quotes: 245 },
-      { month: 'Eyl', revenue: 298000, policies: 151, quotes: 223 },
-      { month: 'Eki', revenue: 342000, policies: 174, quotes: 267 },
-      { month: 'Kas', revenue: 365000, policies: 186, quotes: 289 },
-      { month: 'Ara', revenue: 401000, policies: 203, quotes: 312 }
-    ],
-    riskDistribution: [
-      { level: 'Düşük Risk', count: 756, percentage: 60.6, color: '#10B981' },
-      { level: 'Orta Risk', count: 374, percentage: 30.0, color: '#F59E0B' },
-      { level: 'Yüksek Risk', count: 117, percentage: 9.4, color: '#EF4444' }
-    ],
-    topVehicleBrands: [
-      { brand: 'Toyota', count: 234, revenue: 456780 },
-      { brand: 'Volkswagen', count: 189, revenue: 398450 },
-      { brand: 'Ford', count: 156, revenue: 312890 },
-      { brand: 'Renault', count: 142, revenue: 289340 },
-      { brand: 'Opel', count: 98, revenue: 198760 }
-    ],
-    customerSegments: [
-      { segment: 'Platinum', count: 45, value: 890000, color: '#8B5CF6' },
-      { segment: 'Gold', count: 123, value: 756000, color: '#F59E0B' },
-      { segment: 'Silver', count: 298, value: 534000, color: '#6B7280' },
-      { segment: 'Bronze', count: 456, value: 276780, color: '#92400E' }
-    ],
-    performanceMetrics: [
-      { metric: 'Dönüşüm Oranı', current: 67.8, previous: 62.3, target: 70, unit: '%' },
-      { metric: 'Ortalama Prim', current: 1970, previous: 1845, target: 2000, unit: '₺' },
-      { metric: 'Müşteri Memnuniyeti', current: 4.6, previous: 4.3, target: 4.8, unit: '/5' },
-      { metric: 'Yenileme Oranı', current: 85.2, previous: 82.1, target: 88, unit: '%' }
-    ]
-  };
+  if (loading) return <div>Yükleniyor…</div>;
+  if (error)   return <div className="text-red-600">Hata: {error}</div>;
+  if (!summary || !monthlyData || !riskDistribution || !topVehicleBrands || !customerSegments || !performanceMetrics) {
+    return null;
+  }
 
   const quickStats = [
     {
       title: 'Toplam Gelir',
-      value: `₺${analyticsData.totalRevenue.toLocaleString('tr-TR')}`,
+      value: `₺${summary.totalRevenue.toLocaleString('tr-TR')}`,
       change: '+18.2%',
       icon: DollarSign,
       color: 'from-green-500 to-emerald-500'
     },
     {
       title: 'Toplam Poliçe',
-      value: analyticsData.totalPolicies.toString(),
+      value: summary.totalPolicies.toString(),
       change: '+12.5%',
       icon: BarChart3,
       color: 'from-blue-500 to-cyan-500'
     },
     {
       title: 'Dönüşüm Oranı',
-      value: `%${analyticsData.conversionRate}`,
+      value: `%${summary.conversionRate}`,
       change: '+5.5%',
       icon: Target,
       color: 'from-purple-500 to-pink-500'
     },
     {
       title: 'Ortalama Prim',
-      value: `₺${analyticsData.averagePremium.toLocaleString('tr-TR')}`,
+      value: `₺${summary.averagePremium.toLocaleString('tr-TR')}`,
       change: '+6.8%',
       icon: TrendingUp,
       color: 'from-orange-500 to-red-500'
@@ -109,17 +80,17 @@ const Analytics: React.FC = () => {
                 { id: 'month', label: 'Bu Ay' },
                 { id: 'quarter', label: 'Bu Çeyrek' },
                 { id: 'year', label: 'Bu Yıl' }
-              ].map((period) => (
+              ].map((p) => (
                 <button
-                  key={period.id}
-                  onClick={() => setSelectedPeriod(period.id)}
+                  key={p.id}
+                  onClick={() => setSelectedPeriod(p.id as any)}
                   className={`px-6 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                    selectedPeriod === period.id
+                    selectedPeriod === p.id
                       ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
                       : 'text-gray-600 hover:bg-gray-100'
                   }`}
                 >
-                  {period.label}
+                  {p.label}
                 </button>
               ))}
             </div>
@@ -168,7 +139,7 @@ const Analytics: React.FC = () => {
                 <span className="text-sm text-gray-600">Poliçe</span>
               </div>
             </div>
-            <RevenueChart data={analyticsData.monthlyData} />
+            <RevenueChart data={monthlyData} />
           </div>
 
           {/* Risk Distribution */}
@@ -179,14 +150,14 @@ const Analytics: React.FC = () => {
                 Risk Dağılımı
               </h3>
             </div>
-            <RiskDistributionChart data={analyticsData.riskDistribution} />
+            <RiskDistributionChart data={riskDistribution} />
           </div>
         </div>
 
         {/* Performance Metrics and Top Brands */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <PerformanceMetrics metrics={analyticsData.performanceMetrics} />
-          <TopBrands brands={analyticsData.topVehicleBrands} />
+          <PerformanceMetrics metrics={performanceMetrics} />
+          <TopBrands brands={topVehicleBrands} />
         </div>
 
         {/* Customer Segments */}
@@ -198,13 +169,22 @@ const Analytics: React.FC = () => {
             </h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {analyticsData.customerSegments.map((segment) => (
-              <div key={segment.segment} className="text-center p-4 rounded-lg" style={{ backgroundColor: `${segment.color}15` }}>
-                <div className="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center" style={{ backgroundColor: segment.color }}>
+            {customerSegments.map((segment) => (
+              <div
+                key={segment.segment}
+                className="text-center p-4 rounded-lg"
+                style={{ backgroundColor: `${segment.color}15` }}
+              >
+                <div
+                  className="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: segment.color }}
+                >
                   <span className="text-white font-bold text-lg">{segment.count}</span>
                 </div>
                 <h4 className="font-bold text-gray-900 mb-1">{segment.segment}</h4>
-                <p className="text-sm text-gray-600">₺{segment.value.toLocaleString('tr-TR')}</p>
+                <p className="text-sm text-gray-600">
+                  ₺{segment.value.toLocaleString('tr-TR')}
+                </p>
                 <p className="text-xs text-gray-500 mt-1">{segment.count} müşteri</p>
               </div>
             ))}

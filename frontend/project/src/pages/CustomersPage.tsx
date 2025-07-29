@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import api from '../../api/axios';
+import api from '../api/axios';
 import { CustomerResponse } from '../types';  // TS tipleri
 
 export default function CustomersPage() {

@@ -1,28 +1,33 @@
-// src/main/java/com/trafik/teklif_api/controller/QuoteController.java
 package com.trafik.teklif_api.controller;
 
 import com.trafik.teklif_api.dto.*;
 import com.trafik.teklif_api.service.QuoteService;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
+import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/quotes")
+@RequiredArgsConstructor
 public class QuoteController {
-  private final QuoteService svc;
-  public QuoteController(QuoteService svc) { this.svc = svc; }
+    private final QuoteService service;
 
-  @PostMapping
-  public ResponseEntity<QuoteResponse> create(@RequestBody CreateQuoteRequest req) {
-    var resp = svc.createQuote(req);
-    return ResponseEntity.status(HttpStatus.CREATED).body(resp);
-  }
+    @PostMapping
+    public QuoteResponse create(@Valid @RequestBody CreateQuoteRequest req) {
+        return service.create(req);
+    }
 
-  @GetMapping
-  public List<QuoteResponse> list() {
-    return svc.listAll();
-  }
+    @GetMapping
+    public List<QuoteResponse> list(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+    ) {
+        return service.getAll(page, size);
+    }
+
+    @GetMapping("/recent")
+    public List<QuoteResponse> recent() {
+        return service.getRecent();
+    }
 }
