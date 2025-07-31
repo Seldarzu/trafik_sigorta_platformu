@@ -13,14 +13,12 @@ public enum CustomerValue {
 
     @JsonCreator
     public static CustomerValue from(String value) {
-        if (value == null) {
-            return null;
-        }
+        if (value == null) return null;
         return CustomerValue.valueOf(value.trim().toUpperCase(Locale.ENGLISH));
     }
 
     @JsonValue
     public String toValue() {
-        return this.name();
+        return this.name().toLowerCase(Locale.ENGLISH);
     }
 }
