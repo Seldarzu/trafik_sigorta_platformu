@@ -1,10 +1,10 @@
-// src/main/java/com/trafik/teklif_api/dto/CreateDriverRequest.java
+// src/main/java/com/trafik/teklif_api/dto/UpdateDriverRequest.java
 package com.trafik.teklif_api.dto;
 
 import jakarta.validation.constraints.*;
 import java.time.LocalDate;
 
-public record CreateDriverRequest(
+public record UpdateDriverRequest(
     @NotBlank String firstName,
     @NotBlank String lastName,
     @NotBlank @Pattern(regexp = "\\d{11}") String tcNumber,

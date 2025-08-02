@@ -13,80 +13,61 @@ public class Quote {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "customer_id", nullable = false)
     private Long customerId;
 
-    @Column(nullable = false)
+    @Column(name = "risk_score", nullable = false)
     private Integer riskScore;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "premium_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal premiumAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private QuoteStatus status;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "unique_ref_no", nullable = false, updatable = false, unique = true)
     private String uniqueRefNo;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "vehicle_id", referencedColumnName = "id")
+    private Vehicle vehicle;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "driver_id", referencedColumnName = "id")
+    private Driver driver;
 
     public Quote() {}
 
-    public Long getId() {
-        return id;
-    }
+    // --- getters & setters for all fields ---
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public Long getCustomerId() {
-        return customerId;
-    }
+    public Long getCustomerId() { return customerId; }
+    public void setCustomerId(Long customerId) { this.customerId = customerId; }
 
-    public void setCustomerId(Long customerId) {
-        this.customerId = customerId;
-    }
+    public Integer getRiskScore() { return riskScore; }
+    public void setRiskScore(Integer riskScore) { this.riskScore = riskScore; }
 
-    public Integer getRiskScore() {
-        return riskScore;
-    }
+    public BigDecimal getPremiumAmount() { return premiumAmount; }
+    public void setPremiumAmount(BigDecimal premiumAmount) { this.premiumAmount = premiumAmount; }
 
-    public void setRiskScore(Integer riskScore) {
-        this.riskScore = riskScore;
-    }
+    public QuoteStatus getStatus() { return status; }
+    public void setStatus(QuoteStatus status) { this.status = status; }
 
-    public BigDecimal getPremiumAmount() {
-        return premiumAmount;
-    }
+    public String getUniqueRefNo() { return uniqueRefNo; }
+    public void setUniqueRefNo(String uniqueRefNo) { this.uniqueRefNo = uniqueRefNo; }
 
-    public void setPremiumAmount(BigDecimal premiumAmount) {
-        this.premiumAmount = premiumAmount;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public QuoteStatus getStatus() {
-        return status;
-    }
+    public Vehicle getVehicle() { return vehicle; }
+    public void setVehicle(Vehicle vehicle) { this.vehicle = vehicle; }
 
-    public void setStatus(QuoteStatus status) {
-        this.status = status;
-    }
-
-    public String getUniqueRefNo() {
-        return uniqueRefNo;
-    }
-
-    public void setUniqueRefNo(String uniqueRefNo) {
-        this.uniqueRefNo = uniqueRefNo;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+    public Driver getDriver() { return driver; }
+    public void setDriver(Driver driver) { this.driver = driver; }
 }

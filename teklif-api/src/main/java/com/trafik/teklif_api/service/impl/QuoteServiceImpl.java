@@ -1,78 +1,69 @@
-// Dosya: src/main/java/com/trafik/teklif_api/service/impl/QuoteServiceImpl.java
 package com.trafik.teklif_api.service.impl;
 
-import com.trafik.teklif_api.dto.CreateQuoteRequest;
-import com.trafik.teklif_api.dto.QuoteResponse;
-import com.trafik.teklif_api.entity.Quote;
+import com.trafik.teklif_api.dto.*;
+import com.trafik.teklif_api.entity.*;
 import com.trafik.teklif_api.model.QuoteStatus;
-import com.trafik.teklif_api.repository.QuoteRepository;
+import com.trafik.teklif_api.repository.*;
 import com.trafik.teklif_api.service.QuoteService;
-
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
 public class QuoteServiceImpl implements QuoteService {
 
     private final QuoteRepository quoteRepo;
 
+    @Autowired
     public QuoteServiceImpl(QuoteRepository quoteRepo) {
         this.quoteRepo = quoteRepo;
     }
 
     @Override
-    public QuoteResponse create(CreateQuoteRequest req) {
-        // Varsayılan değerler
-        int risk = req.riskScore() != null ? req.riskScore() : 0;
-        BigDecimal premium = req.premiumAmount() != null
-            ? BigDecimal.valueOf(req.premiumAmount())
-            : BigDecimal.ZERO;
-
-        // Referans ve zaman
-        String ref = "Q-" + System.currentTimeMillis();
-        LocalDateTime now = LocalDateTime.now();
-
-        // Entity oluştur ve kaydet
-        Quote q = new Quote();
-        q.setCustomerId(req.customerId());
-        q.setRiskScore(risk);
-        q.setPremiumAmount(premium);
-        q.setStatus(QuoteStatus.PENDING);
-        q.setUniqueRefNo(ref);
-        q.setCreatedAt(now);
-
-        Quote saved = quoteRepo.save(q);
-        return toDto(saved);
+    public QuoteResponse create(CreateQuoteRequest request) {
+        Quote quote = new Quote();
+        quote.setCustomerId(request.customerId());
+        quote.setRiskScore(request.riskScore());
+        quote.setPremiumAmount(BigDecimal.valueOf(request.premiumAmount()));
+        quote.setStatus(QuoteStatus.PENDING);
+        quote.setUniqueRefNo(UUID.randomUUID().toString());
+        quote.setCreatedAt(LocalDateTime.now());
+        Vehicle v = new Vehicle();
+        v.setPlateNumber(request.vehicle().plateNumber());
+        v.setBrand(request.vehicle().brand());
+        v.setModel(request.vehicle().model());
+        v.setYear(request.vehicle().year());
+        quote.setVehicle(v);
+        Driver d = new Driver();
+        d.setFirstName(request.driver().firstName());
+        d.setLastName(request.driver().lastName());
+        d.setTcNumber(request.driver().tcNumber());
+        d.setBirthDate(request.driver().birthDate());
+        quote.setDriver(d);
+        Quote saved = quoteRepo.save(quote);
+        return mapToResponse(saved);
     }
 
     @Override
     public List<QuoteResponse> getAll(int page, int size) {
-        return quoteRepo.findAll(
-                    PageRequest.of(page, size, Sort.by("createdAt").descending())
-               ).stream()
-               .map(this::toDto)
-               .collect(Collectors.toList());
+        Page<Quote> p = quoteRepo.findAll(PageRequest.of(page, size, Sort.by("createdAt").descending()));
+        return p.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
     @Override
     public List<QuoteResponse> getRecent() {
-        // Eğer repository'de özel bir method yoksa paging ile alabilirsiniz:
-        return quoteRepo.findAll(
-                    PageRequest.of(0, 5, Sort.by("createdAt").descending())
-               ).stream()
-               .map(this::toDto)
-               .collect(Collectors.toList());
+        return quoteRepo.findTop10ByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
-    private QuoteResponse toDto(Quote q) {
+    private QuoteResponse mapToResponse(Quote q) {
         return new QuoteResponse(
             q.getId(),
             q.getCustomerId(),
