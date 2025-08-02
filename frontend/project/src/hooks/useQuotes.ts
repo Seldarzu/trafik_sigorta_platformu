@@ -1,3 +1,4 @@
+// src/hooks/useQuotes.ts
 import { useState, useEffect } from 'react';
 import { QuoteService } from '../services/QuoteService';
 import { Quote } from '../types';
