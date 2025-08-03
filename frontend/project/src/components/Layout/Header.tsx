@@ -1,82 +1,110 @@
-import React, { useState, useEffect } from 'react'
+// src/components/Layout/Header.tsx
+import React, { useState, useEffect } from 'react';
+import { Page, Notification } from '../../types';
 import {
   Shield,
+  FilePlus,
   FileText,
-  Clock,
   Users,
-  TrendingUp,
-  Bell,
+  BarChart2,
   Settings,
-  LucideIcon
-} from 'lucide-react'
-import NotificationCenter from '../Notifications/NotificationCenter'
-import { NotificationService } from '../../services/NotificationService'
-import { Notification, Page } from '../../types'
+  Bell,
+  User as UserIcon
+} from 'lucide-react';
+import NotificationCenter from '../Notifications/NotificationCenter';
 
-interface HeaderProps {
-  currentPage: Page
-  onPageChange: (page: Page) => void
+interface Props {
+  currentPage: Page;
+  onPageChange: (page: Page) => void;
 }
 
-const navigation: { id: Page; label: string; icon: LucideIcon | null }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: Shield },
-  { id: 'new-quote', label: 'Yeni Teklif', icon: FileText },
-  { id: 'quotes', label: 'Teklifler', icon: FileText },
-  { id: 'policies', label: 'Poliçeler', icon: Clock },
-  { id: 'customers', label: 'Müşteriler', icon: Users },
-  { id: 'analytics', label: 'Analitik', icon: TrendingUp },
-  { id: 'settings', label: 'Ayarlar', icon: Settings }
-]
+const navigation: { id: Page; label: string; icon: React.FC<any> | null }[] = [
+  { id: 'dashboard',  label: 'Dashboard',  icon: Shield     },
+  { id: 'new-quote',  label: 'Yeni Teklif', icon: FilePlus   },
+  { id: 'quotes',     label: 'Teklifler',   icon: FileText   },
+  { id: 'policies',   label: 'Poliçeler',   icon: FileText   },
+  { id: 'customers',  label: 'Müşteriler',  icon: Users      },
+  { id: 'analytics',  label: 'Analitik',    icon: BarChart2  },
+];
 
-const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange }) => {
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
-
+const Header: React.FC<Props> = ({ currentPage, onPageChange }) => {
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  
+  // Örnek dummy veri; istersen burayı bir API çağrısıyla değiştir
   useEffect(() => {
-    NotificationService.list().then(ns => {
-      setNotifications(ns)
-      setUnreadCount(ns.filter(n => !n.isRead).length)
-    })
-  }, [])
+    setNotifications([
+      {
+        id: 'n1',
+        title: 'Yeni teklif oluşturuldu',
+        message: 'Q-2024-010 numaralı teklif başarıyla oluşturuldu.',
+        type: 'info',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        actionUrl: '/quotes/10',
+        actionText: 'Göster'
+      },
+      {
+        id: 'n2',
+        title: 'Prim güncellemesi',
+        message: 'Q-2024-005 numaralı teklifin primi güncellendi.',
+        type: 'success',
+        isRead: false,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'n3',
+        title: 'Hata bildirimi',
+        message: 'Q-2024-003 numaralı teklifte hata oluştu.',
+        type: 'warning',
+        isRead: true,
+        createdAt: new Date().toISOString()
+      }
+    ]);
+  }, []);
 
-  const toggleNotifications = () => {
-    if (showNotifications && unreadCount > 0) {
-      NotificationService.markAllRead().then(() => {
-        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
-        setUnreadCount(0)
-      })
-    }
-    setShowNotifications(!showNotifications)
-  }
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
     <header className="bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
+          {/* Logo */}
           <div className="flex items-center">
-            <Shield className="h-6 w-6 text-white" />
-            <span className="ml-3 text-xl font-bold text-white">SigortaTeklif Pro</span>
+            <div className="flex-shrink-0 flex items-center">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Shield className="h-6 w-6 text-white" />
+              </div>
+              <span className="ml-3 text-xl font-bold text-white">
+                SigortaTeklif Pro
+              </span>
+            </div>
           </div>
-          <nav className="hidden md:flex space-x-8">
-            {navigation.map(item => (
+
+          {/* Navigation */}
+          <nav className="hidden md:flex space-x-4">
+            {navigation.map(({ id, label, icon: Icon }) => (
               <button
-                key={item.id}
-                onClick={() => onPageChange(item.id)}
-                className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                  currentPage === item.id
-                    ? 'text-white bg-white/20 backdrop-blur-sm'
-                    : 'text-white/80 hover:text-white hover:bg-white/10'
-                }`}
+                key={id}
+                onClick={() => onPageChange(id)}
+                className={`
+                  inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200
+                  ${currentPage === id
+                    ? 'bg-white/20 text-white backdrop-blur-sm'
+                    : 'text-white/80 hover:text-white hover:bg-white/10'}
+                `}
               >
-                {item.icon && <item.icon className="h-4 w-4 mr-2" />}
-                {item.label}
+                {Icon && <Icon className="h-4 w-4 mr-2" />}
+                {label}
               </button>
             ))}
           </nav>
+
+          {/* User actions */}
           <div className="flex items-center space-x-4">
+            {/* Notifications */}
             <button
-              onClick={toggleNotifications}
+              onClick={() => setShowNotifications(v => !v)}
               className="relative p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors duration-200"
             >
               <Bell className="h-5 w-5" />
@@ -86,15 +114,19 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange }) => {
                 </span>
               )}
             </button>
+
+            {/* Settings */}
             <button
               onClick={() => onPageChange('settings')}
               className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors duration-200"
             >
               <Settings className="h-5 w-5" />
             </button>
+
+            {/* User Profile */}
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-orange-500 rounded-full flex items-center justify-center">
-                <Users className="h-4 w-4 text-white" />
+                <UserIcon className="h-4 w-4 text-white" />
               </div>
               <div className="hidden md:block">
                 <p className="text-sm font-medium text-white">Ahmet Yılmaz</p>
@@ -104,13 +136,15 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange }) => {
           </div>
         </div>
       </div>
+
+      {/* Notification Center */}
       <NotificationCenter
         isOpen={showNotifications}
         notifications={notifications}
         onClose={() => setShowNotifications(false)}
       />
     </header>
-  )
-}
+  );
+};
 
-export default Header
+export default Header;

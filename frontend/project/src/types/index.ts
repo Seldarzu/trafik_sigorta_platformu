@@ -39,15 +39,32 @@ export interface QuoteFormData {
   driver: Partial<Driver>
   currentStep: 1 | 2 | 3
 }
+export interface Quote   {
+  id: string;
+  uniqueRefNo: string;
+  riskScore: number;
+  premiumAmount: number;
+  finalPremium: number;
+  totalDiscount: number;
+  coverageAmount: number;
+  createdAt: string;
+  validUntil: string;
+  status: 'pending'|'approved'|'rejected'|'active'|'expired'|'sold'|'draft';
+  riskLevel: 'low'|'medium'|'high';
+  companyName: string;
+  vehicle: Vehicle;
+  driver: Driver;
+  discounts: { name:string; percentage:number; amount:number }[];
+}
 
-export interface Quote {
-  id: string
-  uniqueRefNo: string
-  customerId?: string
-  riskScore: number
-  premiumAmount: number
-  status: 'PENDING' | 'APPROVED' | 'REJECTED'
-  createdAt: string
+// Filtre seçenekleri
+export interface FilterOptions {
+  status: string;
+  minPremium: number;
+  maxPremium: number;
+  riskLevel:number;
+  sortBy: 'createdAt' | 'premiumAmount' | 'riskScore' | 'finalPremium';
+  sortOrder: 'asc' | 'desc';
 }
 
 export interface OverviewData {
@@ -150,13 +167,7 @@ export interface Notification {
   actionText?: string
 }
 
-export interface FilterOptions {
-  status: string
-  minPremium: number
-  maxPremium: number
-  sortBy: 'createdAt' | 'premiumAmount' | 'riskScore'
-  sortOrder: 'asc' | 'desc'
-}
+
 export interface Customer {
   id: string
   firstName: string
