@@ -22,7 +22,7 @@ import java.time.format.TextStyle;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
+//TODO:bu katmana bak 
 @Service
 @RequiredArgsConstructor
 public class AnalyticsServiceImpl implements AnalyticsService {
@@ -121,12 +121,12 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             .collect(Collectors.toList());
     }
 
-    @Override
+ /*   @Override
     public List<SegmentDto> getCustomerSegments(String period) {
         LocalDate start = calculateStart(period);
 
         // Müşteri bazlı toplam prim
-        Map<Long, Long> revenueByCustomer = quoteRepo.findAll().stream()
+       Map<Long, Long> revenueByCustomer = quoteRepo.findAll().stream()
             .filter(q -> !q.getCreatedAt().toLocalDate().isBefore(start))
             .collect(Collectors.groupingBy(
                 Quote::getCustomerId,
@@ -154,7 +154,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             })
             .collect(Collectors.toList());
     }
-
+*/
     @Override
     public List<PerformanceDto> getPerformanceMetrics(String period) {
         // Şimdilik demo amaçlı full summary kullanılıyor

@@ -2,14 +2,20 @@
 package com.trafik.teklif_api.controller;
 
 import com.trafik.teklif_api.dto.CreateQuoteRequest;
+import com.trafik.teklif_api.dto.UpdateQuoteRequest;
 import com.trafik.teklif_api.dto.QuoteResponse;
+import com.trafik.teklif_api.dto.PolicyResponse;
 import com.trafik.teklif_api.service.QuoteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/quotes")
@@ -18,18 +24,14 @@ public class QuoteController {
 
     private final QuoteService service;
 
-    /**
-     * Yeni teklif oluşturur.
-     */
+    /** Yeni teklif oluşturur. */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public QuoteResponse create(@Valid @RequestBody CreateQuoteRequest req) {
         return service.create(req);
     }
 
-    /**
-     * Sayfalı tüm teklifleri listeler.
-     */
+    /** Tüm teklifleri sayfalı olarak listeler. */
     @GetMapping
     public List<QuoteResponse> list(
         @RequestParam(defaultValue = "0") int page,
@@ -38,11 +40,49 @@ public class QuoteController {
         return service.getAll(page, size);
     }
 
-    /**
-     * En yeni 10 teklifi döner.
-     */
-    @GetMapping("/recent")
-    public List<QuoteResponse> recent() {
-        return service.getRecent();
+    /** Teklif detayını döner. */
+    @GetMapping("/{id}")
+    public ResponseEntity<QuoteResponse> getById(@PathVariable UUID id) {
+        return service.getById(id)
+                      .map(ResponseEntity::ok)
+                      .orElse(ResponseEntity.notFound().build());
+    }
+
+    /** Mevcut teklifi günceller. */
+    @PutMapping("/{id}")
+    public ResponseEntity<QuoteResponse> update(
+        @PathVariable UUID id,
+        @Valid @RequestBody UpdateQuoteRequest req
+    ) {
+        return service.update(id, req)
+                      .map(ResponseEntity::ok)
+                      .orElse(ResponseEntity.notFound().build());
+    }
+
+    /** Teklifi siler. */
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id) {
+        service.delete(id);
+    }
+
+    /** Teklifi poliçeye çevirir. */
+    @PostMapping("/{id}/convert")
+    public ResponseEntity<PolicyResponse> convert(@PathVariable UUID id) {
+        return service.convert(id)
+                      .map(p -> ResponseEntity.status(HttpStatus.CREATED).body(p))
+                      .orElse(ResponseEntity.notFound().build());
+    }
+
+    /** Tekliflerde gelişmiş arama yapar. */
+    @GetMapping("/search")
+    public List<QuoteResponse> search(
+        @RequestParam Optional<String> customerName,
+        @RequestParam Optional<LocalDate> from,
+        @RequestParam Optional<LocalDate> to,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+    ) {
+        return service.search(customerName, from, to, page, size);
     }
 }

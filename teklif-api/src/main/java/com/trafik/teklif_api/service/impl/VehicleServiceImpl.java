@@ -1,25 +1,32 @@
-// src/main/java/com/trafik/teklif_api/service/impl/VehicleServiceImpl.java
 package com.trafik.teklif_api.service.impl;
 
 import com.trafik.teklif_api.dto.*;
 import com.trafik.teklif_api.entity.Vehicle;
-import com.trafik.teklif_api.repository.VehicleRepository;
+import com.trafik.teklif_api.repository.*;
 import com.trafik.teklif_api.service.VehicleService;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 public class VehicleServiceImpl implements VehicleService {
 
     private final VehicleRepository vehicleRepo;
+    private final VehicleBrandRepository brandRepo;
+    private final VehicleModelRepository modelRepo;
 
     @Autowired
-    public VehicleServiceImpl(VehicleRepository vehicleRepo) {
+    public VehicleServiceImpl(
+            VehicleRepository vehicleRepo,
+            VehicleBrandRepository brandRepo,
+            VehicleModelRepository modelRepo
+    ) {
         this.vehicleRepo = vehicleRepo;
+        this.brandRepo = brandRepo;
+        this.modelRepo = modelRepo;
     }
 
     @Override
@@ -40,22 +47,20 @@ public class VehicleServiceImpl implements VehicleService {
     @Override
     public List<VehicleResponse> getAll() {
         return vehicleRepo.findAll()
-                .stream()
-                .map(this::map)
-                .collect(Collectors.toList());
+                .stream().map(this::map).toList();
     }
 
     @Override
-    public VehicleResponse getById(Long id) {
+    public VehicleResponse getById(UUID id) {
         Vehicle v = vehicleRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Vehicle bulunamadı: " + id));
+                .orElseThrow(() -> new RuntimeException("Araç bulunamadı: " + id));
         return map(v);
     }
 
     @Override
-    public VehicleResponse update(Long id, UpdateVehicleRequest req) {
+    public VehicleResponse update(UUID id, UpdateVehicleRequest req) {
         Vehicle v = vehicleRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Vehicle bulunamadı: " + id));
+                .orElseThrow(() -> new RuntimeException("Araç bulunamadı: " + id));
         v.setPlateNumber(req.plateNumber());
         v.setBrand(req.brand());
         v.setModel(req.model());
@@ -69,8 +74,32 @@ public class VehicleServiceImpl implements VehicleService {
     }
 
     @Override
-    public void delete(Long id) {
+    public void delete(UUID id) {
         vehicleRepo.deleteById(id);
+    }
+
+    @Override
+    public List<VehicleBrandResponse> getBrands() {
+        return brandRepo.findByIsActiveTrueOrderByNameAsc()
+                .stream()
+                .map(b -> new VehicleBrandResponse(b.getId(), b.getName()))
+                .toList();
+    }
+
+    @Override
+    public List<VehicleModelResponse> getModelsByBrand(String brand) {
+        var brandEntity = brandRepo.findByNameIgnoreCase(brand)
+                .orElseThrow(() -> new RuntimeException("Marka bulunamadı: " + brand));
+        return modelRepo.findByBrandIdAndIsActiveTrueOrderByNameAsc(brandEntity.getId())
+                .stream()
+                .map(m -> new VehicleModelResponse(m.getId(), m.getName()))
+                .toList();
+    }
+
+    @Override
+    public PlateValidationResponse validatePlate(String plate) {
+        boolean valid = Pattern.matches("^[0-9]{2}[A-Z]{1,3}[0-9]{2,4}$", plate.replaceAll("\\s+","").toUpperCase());
+        return new PlateValidationResponse(plate, valid);
     }
 
     private VehicleResponse map(Vehicle v) {
