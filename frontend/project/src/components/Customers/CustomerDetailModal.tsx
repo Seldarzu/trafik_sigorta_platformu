@@ -1,3 +1,4 @@
+// src/components/Customers/CustomerDetailModal.tsx
 import React from 'react';
 import { X, Edit, Phone, Mail, MapPin, Calendar, User, Award, TrendingUp, FileText, Star, Shield } from 'lucide-react';
 import { Customer } from '../../types';
@@ -91,6 +92,12 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customer, onC
     }
   };
 
+  // Eğer API'den gelmiyorsa 0 kabul edelim:
+  const totalPremium = customer.totalPremium ?? 0;
+  const totalPolicies = customer.totalPolicies ?? 0;
+  const averagePremium =
+    totalPolicies > 0 ? Math.round(totalPremium / totalPolicies) : 0;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -102,7 +109,6 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customer, onC
           >
             <X className="h-6 w-6" />
           </button>
-          
           <div className="flex items-center space-x-4">
             <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
               <User className="h-10 w-10 text-white" />
@@ -143,7 +149,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customer, onC
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm opacity-90">Toplam Poliçe</p>
-                  <p className="text-xl font-bold">{customer.totalPolicies}</p>
+                  <p className="text-xl font-bold">{totalPolicies}</p>
                 </div>
                 <FileText className="h-8 w-8 opacity-80" />
               </div>
@@ -236,18 +242,20 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customer, onC
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center">
-                <div className="text-3xl font-bold text-orange-600 mb-2">{customer.totalPolicies}</div>
+                <div className="text-3xl font-bold text-orange-600 mb-2">
+                  {totalPolicies}
+                </div>
                 <div className="text-sm text-gray-600">Toplam Poliçe</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-green-600 mb-2">
-                  ₺{customer.totalPremium.toLocaleString('tr-TR')}
+                  ₺{totalPremium.toLocaleString('tr-TR')}
                 </div>
                 <div className="text-sm text-gray-600">Toplam Prim</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600 mb-2">
-                  ₺{customer.totalPolicies > 0 ? Math.round(customer.totalPremium / customer.totalPolicies).toLocaleString('tr-TR') : '0'}
+                  ₺{averagePremium.toLocaleString('tr-TR')}
                 </div>
                 <div className="text-sm text-gray-600">Ortalama Prim</div>
               </div>
@@ -275,7 +283,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customer, onC
                   {new Date(customer.registrationDate).toLocaleDateString('tr-TR')}
                 </span>
               </div>
-              
+
               {customer.lastPolicyDate && (
                 <div className="flex items-center justify-between p-3 bg-white rounded-lg">
                   <div className="flex items-center space-x-3">

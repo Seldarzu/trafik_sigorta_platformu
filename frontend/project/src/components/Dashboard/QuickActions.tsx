@@ -1,19 +1,28 @@
+// src/components/Dashboard/QuickActions.tsx
 import React from 'react';
-import { Plus, FileText, BarChart3, Users } from 'lucide-react';
+import { Plus, FileText, PieChart, Users } from 'lucide-react';
+import { Page } from '../../types';
 
 interface QuickActionsProps {
-  onPageChange: (page: string) => void;
+  onPageChange: (page: Page) => void;
 }
 
 const QuickActions: React.FC<QuickActionsProps> = ({ onPageChange }) => {
-  const actions = [
+  const actions: {
+    id: string;
+    title: string;
+    description: string;
+    icon: React.FC<any>;
+    color: string;
+    page: Page;
+  }[] = [
     {
       id: 'new-quote',
       title: 'Yeni Teklif',
       description: 'Hızlıca yeni bir trafik sigortası teklifi oluşturun',
       icon: Plus,
       color: 'bg-blue-600 hover:bg-blue-700',
-      page: 'new-quote'
+      page: 'new-quote',
     },
     {
       id: 'view-quotes',
@@ -21,15 +30,15 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onPageChange }) => {
       description: 'Mevcut tekliflerinizi inceleyin ve yönetin',
       icon: FileText,
       color: 'bg-green-600 hover:bg-green-700',
-      page: 'quotes'
+      page: 'quotes',
     },
     {
       id: 'analytics',
       title: 'Performans Analizi',
       description: 'Satış performansınızı ve trendleri analiz edin',
-      icon: BarChart3,
+      icon: PieChart,
       color: 'bg-purple-600 hover:bg-purple-700',
-      page: 'analytics'
+      page: 'analytics',
     },
     {
       id: 'customers',
@@ -37,8 +46,8 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onPageChange }) => {
       description: 'Müşteri bilgilerini görüntüleyin ve güncelleyin',
       icon: Users,
       color: 'bg-orange-600 hover:bg-orange-700',
-      page: 'customers'
-    }
+      page: 'customers',
+    },
   ];
 
   return (
@@ -53,14 +62,16 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onPageChange }) => {
             <button
               key={action.id}
               onClick={() => onPageChange(action.page)}
-              className="w-full group"
+              className="w-full"
             >
               <div className="flex items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200">
-                <div className={`flex-shrink-0 p-3 rounded-lg ${action.color} transition-colors duration-200`}>
+                <div
+                  className={`flex-shrink-0 p-3 rounded-lg ${action.color} transition-colors duration-200`}
+                >
                   <Icon className="h-6 w-6 text-white" />
                 </div>
                 <div className="ml-4 text-left">
-                  <h4 className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors duration-200">
+                  <h4 className="text-sm font-medium text-gray-900">
                     {action.title}
                   </h4>
                   <p className="text-xs text-gray-500 mt-1">

@@ -1,15 +1,20 @@
 package com.trafik.teklif_api.dto;
 
 import com.trafik.teklif_api.model.QuoteStatus;
-import java.time.LocalDateTime;
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 
 public record QuoteResponse(
-    Long id,
-    Long customerId,
+    String id,
+    UUID customerId,
     Integer riskScore,
-    BigDecimal premiumAmount,       // BigDecimal olarak düzelttik
+    BigDecimal premium,
+    BigDecimal coverageAmount,
+    BigDecimal finalPremium,
+    BigDecimal totalDiscount,
+    String riskLevel,
     QuoteStatus status,
-    String uniqueRefNo,
-    LocalDateTime createdAt
+    OffsetDateTime validUntil,
+    OffsetDateTime createdAt
 ) {}

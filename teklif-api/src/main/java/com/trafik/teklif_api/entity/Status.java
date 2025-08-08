@@ -2,6 +2,7 @@ package com.trafik.teklif_api.entity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+
 import java.util.Locale;
 
 public enum Status {
@@ -11,15 +12,13 @@ public enum Status {
 
     @JsonCreator
     public static Status from(String value) {
-        if (value == null) {
-            return null;
-        }
-        // Mutlaka İngilizce locale ile uppercase
+        if (value == null) return null;
         return Status.valueOf(value.trim().toUpperCase(Locale.ENGLISH));
     }
 
     @JsonValue
     public String toValue() {
-        return this.name();
+        // JSON’a küçük harfli gönderiyoruz
+        return this.name().toLowerCase(Locale.ENGLISH);
     }
 }

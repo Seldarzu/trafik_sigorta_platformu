@@ -1,24 +1,69 @@
-import React from 'react';
-import { Shield, User, Bell, Settings } from 'lucide-react';
-import { useState } from 'react';
+// src/components/Layout/Header.tsx
+import React, { useState, useEffect } from 'react';
+import { Page, Notification } from '../../types';
+import {
+  Shield,
+  FilePlus,
+  FileText,
+  Users,
+  BarChart2,
+  Settings,
+  Bell,
+  User as UserIcon
+} from 'lucide-react';
 import NotificationCenter from '../Notifications/NotificationCenter';
 
-interface HeaderProps {
-  currentPage: string;
-  onPageChange: (page: string) => void;
+interface Props {
+  currentPage: Page;
+  onPageChange: (page: Page) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange }) => {
-  const [showNotifications, setShowNotifications] = useState(false);
-  const unreadCount = 3; // This would come from a context or API
+const navigation: { id: Page; label: string; icon: React.FC<any> | null }[] = [
+  { id: 'dashboard',  label: 'Dashboard',  icon: Shield     },
+  { id: 'new-quote',  label: 'Yeni Teklif', icon: FilePlus   },
+  { id: 'quotes',     label: 'Teklifler',   icon: FileText   },
+  { id: 'policies',   label: 'Poliçeler',   icon: FileText   },
+  { id: 'customers',  label: 'Müşteriler',  icon: Users      },
+  { id: 'analytics',  label: 'Analitik',    icon: BarChart2  },
+];
 
-  const navigation = [
-    { id: 'dashboard', label: 'Dashboard', icon: Shield },
-    { id: 'new-quote', label: 'Yeni Teklif', icon: null },
-    { id: 'quotes', label: 'Teklifler', icon: null },
-    { id: 'customers', label: 'Müşteriler', icon: null },
-    { id: 'analytics', label: 'Analitik', icon: null }
-  ];
+const Header: React.FC<Props> = ({ currentPage, onPageChange }) => {
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  
+  // Örnek dummy veri; istersen burayı bir API çağrısıyla değiştir
+  useEffect(() => {
+    setNotifications([
+      {
+        id: 'n1',
+        title: 'Yeni teklif oluşturuldu',
+        message: 'Q-2024-010 numaralı teklif başarıyla oluşturuldu.',
+        type: 'info',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        actionUrl: '/quotes/10',
+        actionText: 'Göster'
+      },
+      {
+        id: 'n2',
+        title: 'Prim güncellemesi',
+        message: 'Q-2024-005 numaralı teklifin primi güncellendi.',
+        type: 'success',
+        isRead: false,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'n3',
+        title: 'Hata bildirimi',
+        message: 'Q-2024-003 numaralı teklifte hata oluştu.',
+        type: 'warning',
+        isRead: true,
+        createdAt: new Date().toISOString()
+      }
+    ]);
+  }, []);
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
     <header className="bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 shadow-lg">
@@ -37,30 +82,29 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange }) => {
           </div>
 
           {/* Navigation */}
-          <nav className="hidden md:flex space-x-8">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onPageChange(item.id)}
-                  className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                    currentPage === item.id
-                      ? 'text-white bg-white/20 backdrop-blur-sm'
-                      : 'text-white/80 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  {Icon && <Icon className="h-4 w-4 mr-2" />}
-                  {item.label}
-                </button>
-              );
-            })}
+          <nav className="hidden md:flex space-x-4">
+            {navigation.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => onPageChange(id)}
+                className={`
+                  inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200
+                  ${currentPage === id
+                    ? 'bg-white/20 text-white backdrop-blur-sm'
+                    : 'text-white/80 hover:text-white hover:bg-white/10'}
+                `}
+              >
+                {Icon && <Icon className="h-4 w-4 mr-2" />}
+                {label}
+              </button>
+            ))}
           </nav>
 
           {/* User actions */}
           <div className="flex items-center space-x-4">
-            <button 
-              onClick={() => setShowNotifications(!showNotifications)}
+            {/* Notifications */}
+            <button
+              onClick={() => setShowNotifications(v => !v)}
               className="relative p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors duration-200"
             >
               <Bell className="h-5 w-5" />
@@ -70,15 +114,19 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange }) => {
                 </span>
               )}
             </button>
-            <button 
+
+            {/* Settings */}
+            <button
               onClick={() => onPageChange('settings')}
               className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors duration-200"
             >
               <Settings className="h-5 w-5" />
             </button>
+
+            {/* User Profile */}
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-orange-500 rounded-full flex items-center justify-center">
-                <User className="h-4 w-4 text-white" />
+                <UserIcon className="h-4 w-4 text-white" />
               </div>
               <div className="hidden md:block">
                 <p className="text-sm font-medium text-white">Ahmet Yılmaz</p>
@@ -88,10 +136,12 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange }) => {
           </div>
         </div>
       </div>
-      
-      <NotificationCenter 
-        isOpen={showNotifications} 
-        onClose={() => setShowNotifications(false)} 
+
+      {/* Notification Center */}
+      <NotificationCenter
+        isOpen={showNotifications}
+        notifications={notifications}
+        onClose={() => setShowNotifications(false)}
       />
     </header>
   );

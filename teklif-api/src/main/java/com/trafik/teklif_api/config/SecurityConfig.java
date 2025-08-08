@@ -1,4 +1,3 @@
-
 // src/main/java/com/trafik/teklif_api/config/SecurityConfig.java
 package com.trafik.teklif_api.config;
 
@@ -18,19 +17,41 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-          .cors(Customizer.withDefaults())           // WebConfig'teki CORS kurallarını uygula
-          .csrf(csrf -> csrf.disable())              // CSRF off
+          // CORS kurallarını uygula ( aşağıdaki corsConfigurationSource bean’i )
+          .cors(Customizer.withDefaults())
+
+          // CSRF kapalı (stateless API için)
+          .csrf(csrf -> csrf.disable())
+
+          // Oturum yönetimi stateless
           .sessionManagement(sm -> sm
               .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
           )
-          .formLogin(form -> form.disable())         // form-login kapalı
-          .httpBasic(basic -> basic.disable())       // basic-auth kapalı
+
+          // Form-login kapalı
+          .formLogin(form -> form.disable())
+
+          // Basic auth kapalı
+          .httpBasic(basic -> basic.disable())
+
+          // Yetkilendirme kuralları
           .authorizeHttpRequests(auth -> auth
-              .requestMatchers("/api/**").permitAll() // /api/** herkese açık
-              .anyRequest().authenticated()            // diğerleri auth ister
+              // React uygulaması ve API:
+              .requestMatchers(
+                  "/api/**",
+                  // Swagger/OpenAPI UI ve JSON uç noktaları
+                  "/swagger-ui.html",
+                  "/swagger-ui/**",
+                  "/v3/api-docs/**",
+                  "/v3/api-docs.yaml",
+                  "/webjars/**"
+              ).permitAll()
+              // Geri kalan her şeye authentication şartı
+              .anyRequest().authenticated()
           );
 
         return http.build();
@@ -39,12 +60,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
+        // React geliştirme sunucusu
         config.setAllowedOrigins(List.of("http://localhost:5173"));
-        config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        // Tüm path’ler için CORS ayarlarını uygula
         source.registerCorsConfiguration("/**", config);
         return source;
     }

@@ -2,42 +2,70 @@ package com.trafik.teklif_api.controller;
 
 import com.trafik.teklif_api.dto.*;
 import com.trafik.teklif_api.service.VehicleService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/vehicles")
 @RequiredArgsConstructor
 public class VehicleController {
+
     private final VehicleService service;
 
+    /** Yeni araç ekler. */
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public VehicleResponse create(@Valid @RequestBody CreateVehicleRequest req) {
         return service.create(req);
     }
 
+    /** Tüm araçları listeler. */
     @GetMapping
     public List<VehicleResponse> getAll() {
         return service.getAll();
     }
 
+    /** ID’ye göre araç getirir. */
     @GetMapping("/{id}")
-    public VehicleResponse getById(@PathVariable Long id) {
+    public VehicleResponse getById(@PathVariable UUID id) {
         return service.getById(id);
     }
 
+    /** Mevcut aracı günceller. */
     @PutMapping("/{id}")
-    public VehicleResponse update(
-        @PathVariable Long id,
-        @Valid @RequestBody UpdateVehicleRequest req
-    ) {
+    public VehicleResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateVehicleRequest req) {
         return service.update(id, req);
     }
 
+    /** ID’ye göre aracı siler. */
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id) {
         service.delete(id);
+    }
+
+    /** ---- GEREKEN YENİLER: ---- */
+
+    /** Tüm aktif marka listesini döner. */
+    @GetMapping("/brands")
+    public List<VehicleBrandResponse> brands() {
+        return service.getBrands();
+    }
+
+    /** Bir markaya ait aktif modelleri döner. */
+    @GetMapping("/models/{brand}")
+    public List<VehicleModelResponse> models(@PathVariable String brand) {
+        return service.getModelsByBrand(brand);
+    }
+
+    /** Plaka doğrulama. */
+    @GetMapping("/validate-plate")
+    public PlateValidationResponse validatePlate(@RequestParam String plate) {
+        return service.validatePlate(plate);
     }
 }

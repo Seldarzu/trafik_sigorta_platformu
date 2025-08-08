@@ -7,13 +7,27 @@ export function useCustomers() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
+  const fetchData = () => {
     setLoading(true);
     CustomerService.list()
-      .then(res => setData(res))
+      .then(res => {
+        // Enum değerlerini lowercase yapalım ki filtreler çalışsın
+        const normalized = res.map(c => ({
+          ...c,
+          status: c.status.toLowerCase() as Customer['status'],
+          customerValue: c.customerValue.toLowerCase() as Customer['customerValue'],
+          riskProfile: c.riskProfile.toLowerCase() as Customer['riskProfile'],
+        }));
+        setData(normalized);
+      })
       .catch(err => setError(err))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
 
-  return { data, loading, error };
+  // Refetch fonksiyonunu dışa açıyoruz
+  return { data, loading, error, refetch: fetchData };
 }
