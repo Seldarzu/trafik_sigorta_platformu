@@ -1,14 +1,18 @@
+// src/main/java/com/trafik/teklif_api/entity/Vehicle.java
 package com.trafik.teklif_api.entity;
 
 import jakarta.persistence.*;
 import java.util.UUID;
+import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name = "vehicles")
 public class Vehicle {
 
     @Id
-    @Column(columnDefinition = "uuid")
+    @GeneratedValue
+    @UuidGenerator              
+    @Column(columnDefinition = "uuid", updatable = false, nullable = false)
     private UUID id;
 
     @Column(name = "plate_number", nullable = false, unique = true)
@@ -35,14 +39,12 @@ public class Vehicle {
     @Column(name = "city_code")
     private String cityCode;
 
-    // Timestamps (opsiyonel)
     @Column(name = "created_at")
     private java.time.OffsetDateTime createdAt;
 
     @Column(name = "updated_at")
     private java.time.OffsetDateTime updatedAt;
 
-    /** Quote ile ilişki (inverse side) */
     @OneToOne(mappedBy = "vehicle")
     private Quote quote;
 

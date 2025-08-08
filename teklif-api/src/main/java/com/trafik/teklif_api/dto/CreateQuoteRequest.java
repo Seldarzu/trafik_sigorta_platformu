@@ -11,3 +11,4 @@ public record CreateQuoteRequest(
     @NotNull CreateVehicleRequest vehicle,
     @NotNull CreateDriverRequest driver
 ) {}
+

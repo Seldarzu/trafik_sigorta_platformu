@@ -3,21 +3,20 @@ package com.trafik.teklif_api.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-//import com.trafik.teklif_api.model.PolicyStatus;
 
 /**
- * PolicyResponse DTO — bir teklifin poliçeye dönüştürülmesi sonrası
- * istemciye döndürülecek temel poliçe bilgilerini taşır.
+ * PolicyResponse DTO — poliçe CRUD, yenileme, listeleme, arama vb.
+ * işlemlerinden döndürülecek temel poliçe bilgilerini taşır.
  */
 public record PolicyResponse(
-    Long id,                    // Poliçe veritabanı kimliği
-    Long quoteId,               // Kaynağı olan teklifin kimliği
-    Long customerId,            // Poliçeyi alan müşteri kimliği
-    String policyNumber,        // Oluşturulan poliçe numarası
-    BigDecimal premiumAmount,   // Nihai prim tutarı
-    LocalDateTime effectiveDate,// Poliçe başlangıç tarihi/saat
-    LocalDateTime expiryDate,   // Poliçe bitiş tarihi/saat
-    //PolicyStatus status,        // Poliçe durumu (ACTIVE, EXPIRED, vs.)
-    LocalDateTime createdAt     // Poliçe oluşturulma zamanı
+    java.util.UUID   id,
+    String           quoteId,       // artık String
+    java.util.UUID   customerId,
+    String           policyNumber,
+    BigDecimal       finalPremium,
+    LocalDateTime    startDate,
+    LocalDateTime    endDate,
+    com.trafik.teklif_api.model.PolicyStatus status,
+    LocalDateTime    createdAt
 ) {}
-//TODO:Poliçe tablosu 
+
