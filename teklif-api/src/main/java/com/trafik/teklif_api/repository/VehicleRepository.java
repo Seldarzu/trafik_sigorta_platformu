@@ -7,14 +7,12 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 import java.util.UUID;
 
-
 @Repository
 public interface VehicleRepository extends JpaRepository<Vehicle, UUID> {
 
-    /**
-     * Verilen teklif (quote) ID’sine ait aracı getirir.
-     */
-    Optional<Vehicle> findByQuote_Id(String quoteId); 
+    // Plaka UNIQUE => upsert için lazım
+    Optional<Vehicle> findByPlateNumber(String plateNumber);
 
-    
+    // (Varsa kullanıyorsunuz diye bırakıyorum)
+    Optional<Vehicle> findByQuote_Id(String quoteId);
 }
