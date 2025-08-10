@@ -6,7 +6,6 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 import com.trafik.teklif_api.model.QuoteStatus;
 
-
 @Entity
 @Table(name = "quotes")
 public class Quote {
@@ -18,12 +17,14 @@ public class Quote {
     @Column(name = "customer_id", nullable = false)
     private UUID customerId;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "vehicle_id")
+    // ❗ OneToOne yerine ManyToOne (LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "driver_id")
+    // ❗ OneToOne yerine ManyToOne (LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "driver_id", nullable = false)
     private Driver driver;
 
     @Column(name = "premium", nullable = false, precision = 12, scale = 2)
@@ -45,9 +46,10 @@ public class Quote {
     private String riskLevel;
 
     @Column(name = "valid_until", nullable = false)
-        private OffsetDateTime validUntil;
+    private OffsetDateTime validUntil;
 
-    @Convert(converter = QuoteStatusConverter.class)
+    // ❗ Ya @Enumerated ya @Convert — ikisi birden olmaz.
+    // Converter kullanmıyorsan bu satır kalsın, converter'ı kaldır:
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private QuoteStatus status;
@@ -60,7 +62,7 @@ public class Quote {
 
     public Quote() {}
 
-    // --- getters & setters ---
+    // getters & setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
@@ -101,5 +103,4 @@ public class Quote {
     public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 
     public OffsetDateTime getUpdatedAt() { return updatedAt; }
-    // updatedAt setter'e gerek yoksa silebilirsiniz
 }

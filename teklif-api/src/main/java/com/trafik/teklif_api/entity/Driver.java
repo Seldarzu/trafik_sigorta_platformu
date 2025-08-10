@@ -1,9 +1,10 @@
-// src/main/java/com/trafik/teklif_api/entity/Driver.java
 package com.trafik.teklif_api.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -62,105 +63,56 @@ public class Driver {
     @Column(name = "updated_at", nullable = false, insertable = false)
     private OffsetDateTime updatedAt;
 
-    @OneToOne(mappedBy = "driver")
-    private Quote quote;
+    // ❗ Artık OneToOne değil, OneToMany (LAZY)
+    @OneToMany(mappedBy = "driver", fetch = FetchType.LAZY, cascade = {})
+    private List<Quote> quotes = new ArrayList<>();
 
     public Driver() {}
 
-    public UUID getId() {
-        return id;
-    }
+    public UUID getId() { return id; }
 
-    // --- Getters & Setters for all other fields ---
+    public String getFirstName() { return firstName; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
 
-    public String getFirstName() {
-        return firstName;
-    }
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-    public String getLastName() {
-        return lastName;
-    }
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-    public String getTcNumber() {
-        return tcNumber;
-    }
-    public void setTcNumber(String tcNumber) {
-        this.tcNumber = tcNumber;
-    }
-    public LocalDate getBirthDate() {
-        return birthDate;
-    }
-    public void setBirthDate(LocalDate birthDate) {
-        this.birthDate = birthDate;
-    }
-    public LocalDate getLicenseDate() {
-        return licenseDate;
-    }
-    public void setLicenseDate(LocalDate licenseDate) {
-        this.licenseDate = licenseDate;
-    }
-    public String getGender() {
-        return gender;
-    }
-    public void setGender(String gender) {
-        this.gender = gender;
-    }
-    public String getMaritalStatus() {
-        return maritalStatus;
-    }
-    public void setMaritalStatus(String maritalStatus) {
-        this.maritalStatus = maritalStatus;
-    }
-    public String getEducation() {
-        return education;
-    }
-    public void setEducation(String education) {
-        this.education = education;
-    }
-    public String getProfession() {
-        return profession;
-    }
-    public void setProfession(String profession) {
-        this.profession = profession;
-    }
-    public Boolean getHasAccidents() {
-        return hasAccidents;
-    }
-    public void setHasAccidents(Boolean hasAccidents) {
-        this.hasAccidents = hasAccidents;
-    }
-    public Integer getAccidentCount() {
-        return accidentCount;
-    }
-    public void setAccidentCount(Integer accidentCount) {
-        this.accidentCount = accidentCount;
-    }
-    public Boolean getHasViolations() {
-        return hasViolations;
-    }
-    public void setHasViolations(Boolean hasViolations) {
-        this.hasViolations = hasViolations;
-    }
-    public Integer getViolationCount() {
-        return violationCount;
-    }
-    public void setViolationCount(Integer violationCount) {
-        this.violationCount = violationCount;
-    }
-    public OffsetDateTime getCreatedAt() {
-        return createdAt;
-    }
-    public OffsetDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-    public Quote getQuote() {
-        return quote;
-    }
-    public void setQuote(Quote quote) {
-        this.quote = quote;
-    }
+    public String getLastName() { return lastName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
+
+    public String getTcNumber() { return tcNumber; }
+    public void setTcNumber(String tcNumber) { this.tcNumber = tcNumber; }
+
+    public LocalDate getBirthDate() { return birthDate; }
+    public void setBirthDate(LocalDate birthDate) { this.birthDate = birthDate; }
+
+    public LocalDate getLicenseDate() { return licenseDate; }
+    public void setLicenseDate(LocalDate licenseDate) { this.licenseDate = licenseDate; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+
+    public String getMaritalStatus() { return maritalStatus; }
+    public void setMaritalStatus(String maritalStatus) { this.maritalStatus = maritalStatus; }
+
+    public String getEducation() { return education; }
+    public void setEducation(String education) { this.education = education; }
+
+    public String getProfession() { return profession; }
+    public void setProfession(String profession) { this.profession = profession; }
+
+    public Boolean getHasAccidents() { return hasAccidents; }
+    public void setHasAccidents(Boolean hasAccidents) { this.hasAccidents = hasAccidents; }
+
+    public Integer getAccidentCount() { return accidentCount; }
+    public void setAccidentCount(Integer accidentCount) { this.accidentCount = accidentCount; }
+
+    public Boolean getHasViolations() { return hasViolations; }
+    public void setHasViolations(Boolean hasViolations) { this.hasViolations = hasViolations; }
+
+    public Integer getViolationCount() { return violationCount; }
+    public void setViolationCount(Integer violationCount) { this.violationCount = violationCount; }
+
+    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public OffsetDateTime getUpdatedAt() { return updatedAt; }
+
+    public List<Quote> getQuotes() { return quotes; }
+    public void setQuotes(List<Quote> quotes) { this.quotes = quotes; }
 }

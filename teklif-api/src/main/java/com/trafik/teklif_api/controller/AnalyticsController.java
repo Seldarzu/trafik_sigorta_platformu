@@ -1,53 +1,72 @@
-// // src/main/java/com/trafik/teklif_api/controller/AnalyticsController.java
-// package com.trafik.teklif_api.controller;
+package com.trafik.teklif_api.controller;
 
-// import com.trafik.teklif_api.dto.OverviewDto;
-// import com.trafik.teklif_api.dto.MonthlyDto;
-// import com.trafik.teklif_api.dto.RiskDto;
-// import com.trafik.teklif_api.dto.SegmentDto;
-// import com.trafik.teklif_api.dto.PerformanceDto;
-// import com.trafik.teklif_api.dto.BrandDto;
-// import com.trafik.teklif_api.service.AnalyticsService;
-// import lombok.RequiredArgsConstructor;
-// import org.springframework.web.bind.annotation.*;
+import com.trafik.teklif_api.dto.*;
+import com.trafik.teklif_api.service.AnalyticsService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 
-// import java.util.List;
+import java.util.List;
 
-// @CrossOrigin(origins = "http://localhost:5173")
-// @RestController
-// @RequestMapping("/api/analytics")
-// @RequiredArgsConstructor
-// public class AnalyticsController {
-//     private final AnalyticsService service;
+@CrossOrigin(origins = "http://localhost:5173")
+@RestController
+@RequestMapping("/api/analytics")
+@RequiredArgsConstructor
+public class AnalyticsController {
+    private final AnalyticsService service;
 
-//     @GetMapping("/summary")
-//     public OverviewDto summary() {
-//         return service.getSummary();
-//     }
+    // ——— Mevcut endpoint’ler ———
+    @GetMapping("/summary")
+    public OverviewDto summary() {
+        return service.getSummary();
+    }
 
-//     @GetMapping("/monthly")
-//     public List<MonthlyDto> monthly(@RequestParam String period) {
-//         return service.getMonthly(period);
-//     }
+    @GetMapping("/monthly")
+    public List<MonthlyDto> monthly(@RequestParam String period) {
+        return service.getMonthly(period);
+    }
 
-//     @GetMapping("/risk-distribution")
-//     public List<RiskDto> riskDistribution(@RequestParam String period) {
-//         return service.getRiskDistribution(period);
-//     }
+    @GetMapping("/risk-distribution")
+    public List<RiskDto> riskDistribution(@RequestParam String period) {
+        return service.getRiskDistribution(period);
+    }
 
-//     @GetMapping("/customer-segments")
-//     public List<SegmentDto> customerSegments(@RequestParam String period) {
-//         return service.getCustomerSegments(period);
-//     }
+    @GetMapping("/customer-segments")
+    public List<SegmentDto> customerSegments(@RequestParam String period) {
+        return service.getCustomerSegments(period);
+    }
 
-//     @GetMapping("/performance-metrics")
-//     public List<PerformanceDto> performanceMetrics(@RequestParam String period) {
-//         return service.getPerformanceMetrics(period);
-//     }
+    @GetMapping("/performance-metrics")
+    public List<PerformanceDto> performanceMetrics(@RequestParam String period) {
+        return service.getPerformanceMetrics(period);
+    }
 
-//     @GetMapping("/top-brands")
-//     public List<BrandDto> topBrands(@RequestParam String period) {
-//         return service.getTopBrands(period);
-//     }
-// }
-//TODO:bu katmana bak
+    @GetMapping("/top-brands")
+    public List<BrandDto> topBrands(@RequestParam String period) {
+        return service.getTopBrands(period);
+    }
+
+    // ——— Spec ile geriye dönük uyum alias’lar ———
+    // /api/analytics/dashboard  -> summary
+    @GetMapping("/dashboard")
+    public OverviewDto dashboard() {
+        return service.getSummary();
+    }
+
+    // /api/analytics/sales -> monthly (default period=month)
+    @GetMapping("/sales")
+    public List<MonthlyDto> sales(@RequestParam(name = "period", required = false, defaultValue = "month") String period) {
+        return service.getMonthly(period);
+    }
+
+    // /api/analytics/performance -> performance-metrics
+    @GetMapping("/performance")
+    public List<PerformanceDto> performance(@RequestParam(name = "period", required = false, defaultValue = "month") String period) {
+        return service.getPerformanceMetrics(period);
+    }
+
+    // /api/analytics/revenue -> monthly (sadece revenue alanını kullanan UI’lar için aynı DTO uygun)
+    @GetMapping("/revenue")
+    public List<MonthlyDto> revenue(@RequestParam(name = "period", required = false, defaultValue = "month") String period) {
+        return service.getMonthly(period);
+    }
+}

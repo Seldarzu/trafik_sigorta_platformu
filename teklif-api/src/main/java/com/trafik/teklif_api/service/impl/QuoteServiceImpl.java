@@ -10,8 +10,6 @@ import com.trafik.teklif_api.repository.QuoteRepository;
 import com.trafik.teklif_api.repository.VehicleRepository;
 import com.trafik.teklif_api.service.PolicyService;
 import com.trafik.teklif_api.service.QuoteService;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -118,12 +116,14 @@ public class QuoteServiceImpl implements QuoteService {
 
     // ---------- LIST ----------
     @Override
+    @Transactional(readOnly = true)
     public List<QuoteResponse> getAll(int page, int size) {
-        Page<Quote> p = quoteRepo.findAll(
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+        Page<Quote> p = quoteRepo.findAllBy(
+            PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
         );
         return p.stream().map(this::mapToResponse).toList();
     }
+
 
     // ---------- GET ----------
     @Override
@@ -197,52 +197,80 @@ public class QuoteServiceImpl implements QuoteService {
     }
 
     // ---------- SEARCH ----------
-    @Override
-    public List<QuoteResponse> search(
-            Optional<String> customerName,
-            Optional<java.time.LocalDate> from,
-            Optional<java.time.LocalDate> to,
-            int page,
-            int size
-    ) {
-        Specification<Quote> spec = (root, query, cb) -> {
-            List<Predicate> preds = new ArrayList<>();
+  @Override
+@Transactional(readOnly = true)
+public List<QuoteResponse> search(
+    Optional<String> customerName,
+    Optional<java.time.LocalDate> from,
+    Optional<java.time.LocalDate> to,
+    int page,
+    int size
+) {
+    Specification<Quote> spec = (root, query, cb) -> {
+        // fetch joins (ManyToOne olduğu için pagination’a uygun)
+        if (query != null) {
+            root.fetch("driver", jakarta.persistence.criteria.JoinType.LEFT);
+            root.fetch("vehicle", jakarta.persistence.criteria.JoinType.LEFT);
+            var rt = query.getResultType();
+            if (rt != Long.class && rt != long.class) {
+                query.distinct(true);
+            }
+        }
 
-            customerName.ifPresent(name -> {
-                Join<Quote, ?> driverJoin = root.join("driver");
-                String pattern = "%" + name.toLowerCase() + "%";
-                preds.add(cb.or(
-                        cb.like(cb.lower(driverJoin.get("firstName")), pattern),
-                        cb.like(cb.lower(driverJoin.get("lastName")), pattern)
-                ));
-            });
+        var preds = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
 
-            from.ifPresent(d -> preds.add(cb.greaterThanOrEqualTo(root.get("createdAt"), d.atStartOfDay())));
-            to.ifPresent(d -> preds.add(cb.lessThanOrEqualTo(root.get("createdAt"), d.atTime(23, 59, 59))));
+        customerName.ifPresent(name -> {
+            var driverJoin = root.join("driver", jakarta.persistence.criteria.JoinType.LEFT);
+            String pattern = "%" + name.toLowerCase() + "%";
+            preds.add(cb.or(
+                cb.like(cb.lower(driverJoin.get("firstName")), pattern),
+                cb.like(cb.lower(driverJoin.get("lastName")), pattern)
+            ));
+        });
 
-            return cb.and(preds.toArray(new Predicate[0]));
-        };
+        from.ifPresent(d -> preds.add(cb.greaterThanOrEqualTo(root.get("createdAt"), d.atStartOfDay())));
+        to.ifPresent(d -> preds.add(cb.lessThanOrEqualTo(root.get("createdAt"), d.atTime(23,59,59))));
 
-        Page<Quote> p = quoteRepo.findAll(
-                spec,
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+        return cb.and(preds.toArray(new jakarta.persistence.criteria.Predicate[0]));
+    };
+
+    var p = quoteRepo.findAll(
+        spec,
+        PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+    );
+    return p.stream().map(this::mapToResponse).toList();
+}
+private QuoteResponse mapToResponse(Quote q) {
+    var v = q.getVehicle();
+    var d = q.getDriver();
+
+    VehicleSummary vehicleDto = (v == null) ? null
+        : new VehicleSummary(v.getBrand(), v.getModel(), v.getYear(), v.getPlateNumber());
+
+    DriverSummary driverDto = (d == null) ? null
+        : new DriverSummary(
+            d.getFirstName(),
+            d.getLastName(),
+            d.getProfession(),
+            Boolean.TRUE.equals(d.getHasAccidents()),
+            Boolean.TRUE.equals(d.getHasViolations())
         );
-        return p.stream().map(this::mapToResponse).toList();
-    }
 
-    private QuoteResponse mapToResponse(Quote q) {
-        return new QuoteResponse(
-                q.getId(),
-                q.getCustomerId(),
-                q.getRiskScore(),
-                q.getPremium(),
-                q.getCoverageAmount(),
-                q.getFinalPremium(),
-                q.getTotalDiscount(),
-                q.getRiskLevel(),
-                q.getStatus(),
-                q.getValidUntil(),
-                q.getCreatedAt()
-        );
-    }
+    return new QuoteResponse(
+        q.getId(),
+        q.getCustomerId(),
+        q.getRiskScore(),
+        q.getPremium(),
+        q.getCoverageAmount(),
+        q.getFinalPremium(),
+        q.getTotalDiscount(),
+        q.getRiskLevel(),
+        q.getStatus(),
+        q.getValidUntil(),
+        q.getCreatedAt(),
+        vehicleDto,
+        driverDto
+    );
+}
+
 }

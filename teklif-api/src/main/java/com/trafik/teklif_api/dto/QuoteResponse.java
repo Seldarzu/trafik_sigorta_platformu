@@ -16,5 +16,7 @@ public record QuoteResponse(
     String riskLevel,
     QuoteStatus status,
     OffsetDateTime validUntil,
-    OffsetDateTime createdAt
+    OffsetDateTime createdAt,
+    VehicleSummary vehicle,   
+    DriverSummary driver   
 ) {}

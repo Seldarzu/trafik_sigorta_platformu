@@ -1,7 +1,8 @@
-// src/main/java/com/trafik/teklif_api/entity/Vehicle.java
 package com.trafik.teklif_api.entity;
 
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -11,7 +12,7 @@ public class Vehicle {
 
     @Id
     @GeneratedValue
-    @UuidGenerator              
+    @UuidGenerator
     @Column(columnDefinition = "uuid", updatable = false, nullable = false)
     private UUID id;
 
@@ -45,12 +46,12 @@ public class Vehicle {
     @Column(name = "updated_at")
     private java.time.OffsetDateTime updatedAt;
 
-    @OneToOne(mappedBy = "vehicle")
-    private Quote quote;
+    // ❗ Artık OneToOne değil, OneToMany (LAZY)
+    @OneToMany(mappedBy = "vehicle", fetch = FetchType.LAZY, cascade = {})
+    private List<Quote> quotes = new ArrayList<>();
 
     public Vehicle() {}
 
-    // --- Getters & Setters ---
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -84,6 +85,6 @@ public class Vehicle {
     public java.time.OffsetDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(java.time.OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    public Quote getQuote() { return quote; }
-    public void setQuote(Quote quote) { this.quote = quote; }
+    public List<Quote> getQuotes() { return quotes; }
+    public void setQuotes(List<Quote> quotes) { this.quotes = quotes; }
 }

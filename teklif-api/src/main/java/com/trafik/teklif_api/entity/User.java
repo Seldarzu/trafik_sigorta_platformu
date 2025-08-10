@@ -1,21 +1,23 @@
 package com.trafik.teklif_api.entity;
 
+import jakarta.persistence.*;
 import lombok.*;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import org.hibernate.annotations.UuidGenerator;
+import java.util.UUID;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Entity
-@Table(name = "users")
+@Data @NoArgsConstructor @AllArgsConstructor
+@Entity @Table(name = "users")
 public class User {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id @GeneratedValue @UuidGenerator
+    @Column(columnDefinition = "uuid")
+    private UUID id;
+
+    @Column(name="first_name", nullable=false)
     private String firstName;
+
+    @Column(name="last_name", nullable=false)
     private String lastName;
+
+    @Column(nullable=false, unique=true)
     private String email;
 }

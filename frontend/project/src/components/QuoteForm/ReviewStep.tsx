@@ -77,6 +77,14 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             <div className="flex justify-between"><span className="text-gray-600">Ad Soyad:</span><span className="font-medium">{driverData.firstName} {driverData.lastName}</span></div>
             <div className="flex justify-between"><span className="text-gray-600">T.C. Kimlik:</span><span className="font-medium">{driverData.tcNumber}</span></div>
             <div className="flex justify-between"><span className="text-gray-600">Doğum Tarihi:</span><span className="font-medium">{driverData.birthDate && new Date(driverData.birthDate).toLocaleDateString('tr-TR')}</span></div>
+            {/* Sürücü Bilgileri içinde, education varsa göster */}
+            {driverData.education && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Eğitim:</span>
+                <span className="font-medium">{getEducationText(driverData.education)}</span>
+              </div>
+            )}
+
             {driverData.gender && <div className="flex justify-between"><span className="text-gray-600">Cinsiyet:</span><span className="font-medium">{getGenderText(driverData.gender)}</span></div>}
             {driverData.maritalStatus && <div className="flex justify-between"><span className="text-gray-600">Medeni Durum:</span><span className="font-medium">{getMaritalStatusText(driverData.maritalStatus)}</span></div>}
             {driverData.profession && <div className="flex justify-between"><span className="text-gray-600">Meslek:</span><span className="font-medium">{driverData.profession}</span></div>}

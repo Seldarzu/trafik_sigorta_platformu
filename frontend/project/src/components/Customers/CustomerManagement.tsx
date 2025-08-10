@@ -1,3 +1,4 @@
+// src/components/Customers/CustomerManagement.tsx
 import React, { useState, useMemo } from 'react'
 import { Search, Plus, Users, TrendingUp, Award, Star } from 'lucide-react'
 import { Customer } from '../../types'
@@ -72,6 +73,22 @@ const CustomerManagement: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
+
+        {/* === Sayfa Başlığı (Hero) === */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-md">
+              <Users className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-extrabold text-indigo-700">Müşteri Yönetimi</h1>
+              <p className="text-gray-600 mt-1">Müşterilerinizi yönetin ve ilişkilerinizi güçlendirin</p>
+            </div>
+          </div>
+        </div>
+        {/* === /Sayfa Başlığı === */}
+
+        {/* İstatistik kartları */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map(stat => {
             const Icon = stat.icon
@@ -95,6 +112,7 @@ const CustomerManagement: React.FC = () => {
           })}
         </div>
 
+        {/* Arama ve filtreler */}
         <div className="bg-white p-6 rounded-xl shadow-lg mb-8">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1 relative">
@@ -137,6 +155,7 @@ const CustomerManagement: React.FC = () => {
           </div>
         </div>
 
+        {/* Kart liste */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredCustomers.map(c => (
             <CustomerCard
@@ -148,6 +167,7 @@ const CustomerManagement: React.FC = () => {
           ))}
         </div>
 
+        {/* Boş durum */}
         {filteredCustomers.length === 0 && (
           <div className="text-center py-12">
             <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -161,6 +181,7 @@ const CustomerManagement: React.FC = () => {
           </div>
         )}
 
+        {/* Modaller */}
         {showModal && (
           <CustomerModal
             customer={selectedCustomer}

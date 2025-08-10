@@ -1,13 +1,23 @@
 // src/main/java/com/trafik/teklif_api/service/impl/CustomerServiceImpl.java
 package com.trafik.teklif_api.service.impl;
 
-import com.trafik.teklif_api.dto.*;
+import com.trafik.teklif_api.dto.CreateCustomerNoteRequest;
+import com.trafik.teklif_api.dto.CustomerNoteResponse;
+import com.trafik.teklif_api.dto.CustomerRequest;
+import com.trafik.teklif_api.dto.CustomerResponse;
+import com.trafik.teklif_api.dto.CustomerSearchResponse;
+import com.trafik.teklif_api.dto.DriverSummary;
+import com.trafik.teklif_api.dto.PolicyResponse;
+import com.trafik.teklif_api.dto.QuoteResponse;
+import com.trafik.teklif_api.dto.VehicleSummary;
 import com.trafik.teklif_api.entity.Customer;
 import com.trafik.teklif_api.entity.CustomerNote;
-import com.trafik.teklif_api.repository.CustomerRepository;
-import com.trafik.teklif_api.repository.QuoteRepository;
-import com.trafik.teklif_api.repository.PolicyRepository;
+import com.trafik.teklif_api.entity.Driver;
+import com.trafik.teklif_api.entity.Vehicle;
 import com.trafik.teklif_api.repository.CustomerNoteRepository;
+import com.trafik.teklif_api.repository.CustomerRepository;
+import com.trafik.teklif_api.repository.PolicyRepository;
+import com.trafik.teklif_api.repository.QuoteRepository;
 import com.trafik.teklif_api.service.CustomerService;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
@@ -95,27 +105,50 @@ public class CustomerServiceImpl implements CustomerService {
     public void deleteCustomer(UUID id) {
         customerRepo.deleteById(id);
     }
-  @Override
+
+    @Override
     public List<QuoteResponse> getCustomerQuotes(UUID customerId) {
         return quoteRepo.findByCustomerIdOrderByCreatedAtDesc(customerId)
             .stream()
-            .map(q -> new QuoteResponse(
-                q.getId(),
-                q.getCustomerId(),
-                q.getRiskScore(),
-                q.getPremium(),
-                q.getCoverageAmount(),   // doğru getter
-                q.getFinalPremium(),     // doğru getter
-                q.getTotalDiscount(),    // doğru getter
-                q.getRiskLevel(),        // doğru getter
-                q.getStatus(),
-                q.getValidUntil(),
-                q.getCreatedAt()         // doğru getter
-            ))
+            .map(q -> {
+                Vehicle v = q.getVehicle();
+                Driver  d = q.getDriver();
+
+                VehicleSummary vehicleDto = (v == null) ? null :
+                    new VehicleSummary(
+                        v.getBrand(),
+                        v.getModel(),
+                        v.getYear(),
+                        v.getPlateNumber()
+                    );
+
+                DriverSummary driverDto = (d == null) ? null :
+                    new DriverSummary(
+                        d.getFirstName(),
+                        d.getLastName(),
+                        d.getProfession(),
+                        Boolean.TRUE.equals(d.getHasAccidents()),
+                        Boolean.TRUE.equals(d.getHasViolations())
+                    );
+
+                return new QuoteResponse(
+                    q.getId(),
+                    q.getCustomerId(),
+                    q.getRiskScore(),
+                    q.getPremium(),
+                    q.getCoverageAmount(),
+                    q.getFinalPremium(),
+                    q.getTotalDiscount(),
+                    q.getRiskLevel(),
+                    q.getStatus(),
+                    q.getValidUntil(),
+                    q.getCreatedAt(),
+                    vehicleDto,
+                    driverDto
+                );
+            })
             .collect(Collectors.toList());
     }
-    
-      
 
     @Override
     public List<PolicyResponse> getCustomerPolicies(UUID customerId) {
@@ -170,7 +203,8 @@ public class CustomerServiceImpl implements CustomerService {
             ))
             .collect(Collectors.toList());
     }
-  private CustomerResponse mapToResponse(Customer c) {
+
+    private CustomerResponse mapToResponse(Customer c) {
         return new CustomerResponse(
             c.getId(),
             c.getTcNumber(),
@@ -189,4 +223,3 @@ public class CustomerServiceImpl implements CustomerService {
         );
     }
 }
-
