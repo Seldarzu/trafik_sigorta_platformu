@@ -1,15 +1,16 @@
 package com.trafik.teklif_api.controller;
 
-import com.trafik.teklif_api.dto.*;
+import com.trafik.teklif_api.dto.SystemSettingsRequest;
+import com.trafik.teklif_api.dto.SystemSettingsResponse;
 import com.trafik.teklif_api.service.SystemSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/system/settings")
 @RequiredArgsConstructor
 public class SystemSettingsController {
+
     private final SystemSettingsService service;
 
     @GetMapping
@@ -18,7 +19,7 @@ public class SystemSettingsController {
     }
 
     @PutMapping
-    public void update(@Valid @RequestBody SystemSettingsRequest req) {
+    public void update(@RequestBody SystemSettingsRequest req) {
         service.update(req);
     }
 }

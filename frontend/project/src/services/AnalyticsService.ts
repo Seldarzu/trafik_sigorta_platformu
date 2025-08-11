@@ -1,65 +1,24 @@
 // src/services/AnalyticsService.ts
 import api from '../api/axios';
-import {
-  OverviewData,
-  MonthlyData,
-  RiskDistribution,
-  BrandData,
-  SegmentData,
-  PerformanceMetric,
-  AnalyticsData
-} from '../types';
+
+export type Period = 'week' | 'month' | 'quarter' | 'year';
 
 export const AnalyticsService = {
-  getOverview: (): Promise<OverviewData> =>
-    api.get<OverviewData>('/analytics/summary').then(r => r.data),
+  getSummary: async () =>
+    (await api.get('/analytics/summary')).data,
 
-  getMonthly: (period: string): Promise<MonthlyData[]> =>
-    api.get<MonthlyData[]>(`/analytics/monthly?period=${period}`).then(r => r.data),
+  getMonthly: async (period: Period) =>
+    (await api.get('/analytics/monthly', { params: { period } })).data,
 
-  getRiskDistribution: (period: string): Promise<RiskDistribution[]> =>
-    api.get<RiskDistribution[]>(`/analytics/risk-distribution?period=${period}`).then(r => r.data),
+  getRiskDistribution: async (period: Period) =>
+    (await api.get('/analytics/risk-distribution', { params: { period } })).data,
 
-  getTopBrands: (period: string): Promise<BrandData[]> =>
-    api.get<BrandData[]>(`/analytics/top-brands?period=${period}`).then(r => r.data),
+  getCustomerSegments: async (period: Period) =>
+    (await api.get('/analytics/customer-segments', { params: { period } })).data,
 
-  getCustomerSegments: (period: string): Promise<SegmentData[]> =>
-    api.get<SegmentData[]>(`/analytics/customer-segments?period=${period}`).then(r => r.data),
+  getPerformanceMetrics: async (period: Period) =>
+    (await api.get('/analytics/performance-metrics', { params: { period } })).data,
 
-  getPerformanceMetrics: (period: string): Promise<PerformanceMetric[]> =>
-    api.get<PerformanceMetric[]>(`/analytics/performance-metrics?period=${period}`).then(r => r.data),
-
-  /**
-   * Tek bir çağrıyla tüm analitik verileri getirir.
-   * @param period Periyot (örneğin "12m")
-   */
-  getAll: (period: string = '12m'): Promise<AnalyticsData> => {
-    return Promise.all([
-      AnalyticsService.getOverview(),
-      AnalyticsService.getMonthly(period),
-      AnalyticsService.getRiskDistribution(period),
-      AnalyticsService.getTopBrands(period),
-      AnalyticsService.getCustomerSegments(period),
-      AnalyticsService.getPerformanceMetrics(period),
-    ]).then(
-      ([
-        overview,
-        monthlyData,
-        riskDistribution,
-        topVehicleBrands,
-        customerSegments,
-        performanceMetrics,
-      ]) => ({
-        totalRevenue: overview.totalRevenue,
-        totalPolicies: overview.totalPolicies,
-        conversionRate: overview.conversionRate,
-        averagePremium: overview.averagePremium,
-        monthlyData,
-        riskDistribution,
-        topVehicleBrands,
-        customerSegments,
-        performanceMetrics,
-      })
-    );
-  },
+  getTopBrands: async (period: Period) =>
+    (await api.get('/analytics/top-brands', { params: { period } })).data,
 };

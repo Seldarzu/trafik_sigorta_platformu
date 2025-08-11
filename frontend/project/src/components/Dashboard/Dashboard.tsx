@@ -1,32 +1,81 @@
 // src/components/Dashboard/Dashboard.tsx
 import React, { useEffect, useState } from 'react';
-import {
-  FileText,
-  TrendingUp,
-  DollarSign,
-  Users,
-  Loader2,
-  Car,
-  Clock
-} from 'lucide-react';
+import { FileText, TrendingUp, DollarSign, Users, Loader2, Car, Clock } from 'lucide-react';
+
 import StatCard from './StatCard';
 import QuickActions from './QuickActions';
 import RecentQuotes from './RecentQuotes';
-import { Page, AnalyticsData } from '../../types';
-import { AnalyticsService } from '../../services/AnalyticsService';
+
+import { Page, AnalyticsData, PerformanceMetric } from '../../types';
+import { AnalyticsService, Period } from '../../services/AnalyticsService';
 
 interface DashboardProps {
   onPageChange: (page: Page) => void;
 }
+
+const DASHBOARD_PERIOD: Period = 'month';
 
 const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    AnalyticsService.getAll('12m')
-      .then(data => setAnalytics(data))
-      .finally(() => setLoading(false));
+    let mounted = true;
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [
+          summary,
+          monthly,
+          riskDist,
+          segments,
+          perf,
+          brands
+        ] = await Promise.all([
+          AnalyticsService.getSummary(),
+          AnalyticsService.getMonthly(DASHBOARD_PERIOD),
+          AnalyticsService.getRiskDistribution(DASHBOARD_PERIOD),
+          AnalyticsService.getCustomerSegments(DASHBOARD_PERIOD),
+          AnalyticsService.getPerformanceMetrics(DASHBOARD_PERIOD),
+          AnalyticsService.getTopBrands(DASHBOARD_PERIOD)
+        ]);
+
+        if (!mounted) return;
+
+        const data: AnalyticsData = {
+          totalRevenue: summary?.totalRevenue ?? 0,
+          totalPolicies: summary?.totalPolicies ?? 0,
+          conversionRate: summary?.conversionRate ?? 0,
+          averagePremium: summary?.averagePremium ?? 0,
+          monthlyData: monthly ?? [],
+          riskDistribution: riskDist ?? [],
+          topVehicleBrands: brands ?? [],
+          customerSegments: segments ?? [],
+          performanceMetrics: (perf ?? []) as PerformanceMetric[],
+        };
+
+        setAnalytics(data);
+      } catch (e) {
+        console.error('Dashboard analytics load error:', e);
+        setAnalytics({
+          totalRevenue: 0,
+          totalPolicies: 0,
+          conversionRate: 0,
+          averagePremium: 0,
+          monthlyData: [],
+          riskDistribution: [],
+          topVehicleBrands: [],
+          customerSegments: [],
+          performanceMetrics: [],
+        });
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    load();
+    return () => { mounted = false; };
   }, []);
 
   if (loading || !analytics) {
@@ -37,23 +86,23 @@ const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
     );
   }
 
-  // Önceki ayın satış adedi (array hiç boş değil diye varsayıyoruz; değilse 0)
-  const previousPolicies = analytics.monthlyData[0]?.policies || 0;
-  // Bu ay satılan adet
-  const currentPolicies = analytics.monthlyData.slice(-1)[0]?.policies || 0;
-  // Yüzde değişim (ölçü aleti)
-  const policyChangePct = previousPolicies
-    ? ((currentPolicies - previousPolicies) / previousPolicies) * 100
-    : 0;
-  const policyChangeLabel =
-    `${currentPolicies - previousPolicies >= 0 ? '+' : ''}${policyChangePct.toFixed(1)}%`;
+  // Son iki ayı kıyasla (yoksa 0)
+  const lastIndex = analytics.monthlyData.length - 1;
+  const prevIndex = analytics.monthlyData.length - 2;
+  const last = lastIndex >= 0 ? analytics.monthlyData[lastIndex] : undefined;
+  const prev = prevIndex >= 0 ? analytics.monthlyData[prevIndex] : undefined;
+
+  const currentPolicies = last?.policies ?? 0;
+  const previousPolicies = prev?.policies ?? 0;
+  const policyChangePct = previousPolicies ? ((currentPolicies - previousPolicies) / previousPolicies) * 100 : 0;
+  const policyChangeLabel = `${currentPolicies - previousPolicies >= 0 ? '+' : ''}${policyChangePct.toFixed(1)}%`;
 
   const stats = [
     {
       title: 'Toplam Teklifler',
       value: analytics.totalPolicies.toString(),
       change: policyChangeLabel,
-      changeType: policyChangePct >= 0 ? 'increase' as const : 'decrease' as const,
+      changeType: policyChangePct >= 0 ? ('increase' as const) : ('decrease' as const),
       icon: FileText,
       color: 'blue' as const,
     },
@@ -61,13 +110,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
       title: 'Bu Ay Satılan',
       value: currentPolicies.toString(),
       change: policyChangeLabel,
-      changeType: policyChangePct >= 0 ? 'increase' as const : 'decrease' as const,
+      changeType: policyChangePct >= 0 ? ('increase' as const) : ('decrease' as const),
       icon: TrendingUp,
       color: 'green' as const,
     },
     {
       title: 'Toplam Prim',
-      value: `₺${analytics.totalRevenue.toLocaleString()}`,
+      value: `₺${(analytics.totalRevenue ?? 0).toLocaleString('tr-TR')}`,
       change: '+0%',
       changeType: 'increase' as const,
       icon: DollarSign,
@@ -75,13 +124,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
     },
     {
       title: 'Aktif Müşteri',
-      value: analytics.customerSegments.reduce((sum, s) => sum + s.count, 0).toString(),
+      value: analytics.customerSegments.reduce((sum, s) => sum + (s.count ?? 0), 0).toString(),
       change: '+0%',
       changeType: 'increase' as const,
       icon: Users,
       color: 'orange' as const,
     },
   ];
+
+  const avgTimeMetric = analytics.performanceMetrics.find(m => m.metric === 'AverageTime');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50">
@@ -139,7 +190,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
               <div className="ml-4">
                 <h3 className="text-lg font-medium text-gray-900">Ortalama Süre</h3>
                 <p className="text-2xl font-bold text-green-600">
-                  {analytics.performanceMetrics.find(m => m.metric === 'AverageTime')?.current.toFixed(1) || '0'} dk
+                  {avgTimeMetric ? `${avgTimeMetric.current.toFixed(1)} dk` : '—'}
                 </p>
                 <p className="text-sm text-gray-500">Teklif hazırlama</p>
               </div>
@@ -152,7 +203,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
               <div className="ml-4">
                 <h3 className="text-lg font-medium text-gray-900">Dönüşüm Oranı</h3>
                 <p className="text-2xl font-bold text-purple-600">
-                  %{analytics.conversionRate.toFixed(1)}
+                  %{(analytics.conversionRate ?? 0).toFixed(1)}
                 </p>
                 <p className="text-sm text-gray-500">Tekliften satışa</p>
               </div>

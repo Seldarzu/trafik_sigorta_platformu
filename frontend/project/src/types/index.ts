@@ -1,4 +1,6 @@
-// src/types.ts
+// src/types.ts  (veya src/types/index.ts)
+
+// ---------- Navigation ----------
 export type Page =
   | 'dashboard'
   | 'new-quote'
@@ -8,7 +10,7 @@ export type Page =
   | 'settings'
   | 'policies';
 
-/* ------------ Quote tarafı için özet tipler ------------- */
+// ---------- Quotes ----------
 export type VehicleSummary = {
   brand?: string;
   model?: string;
@@ -51,7 +53,7 @@ export type FilterOptions = {
   sortOrder: 'asc' | 'desc';
 };
 
-/* ------------------- Müşteri Tipleri -------------------- */
+// ---------- Customers ----------
 export interface Customer {
   id: string;
   firstName: string;
@@ -87,75 +89,125 @@ export interface CreateCustomerDto {
   notes?: string;
 }
 
-/* Analytics (dokunmadım; mevcut kullanım için bırakıldı) */
-export interface OverviewData { totalRevenue: number; totalPolicies: number; conversionRate: number; averagePremium: number; }
-export interface MonthlyData { month: string; revenue: number; policies: number; quotes: number; }
-export interface RiskDistribution { level: string; count: number; percentage: number; color: string; }
-export interface BrandData { brand: string; count: number; revenue: number; }
-export interface SegmentData { segment: string; count: number; value: number; color: string; }
-export interface PerformanceMetric { metric: string; current: number; previous: number; target: number; unit: string; }
+// ---------- Analytics ----------
+export interface OverviewData {
+  totalRevenue: number;
+  totalPolicies: number;
+  conversionRate: number;
+  averagePremium: number;
+}
+
+export interface MonthlyData {
+  month: string;
+  revenue: number;
+  policies: number;
+  quotes: number;
+}
+
+export interface RiskDistribution {
+  level: string;
+  count: number;
+  percentage: number;
+  color: string;
+}
+
+export interface BrandData {
+  brand: string;
+  count: number;
+  revenue: number;
+}
+
+export interface SegmentData {
+  segment: string;
+  count: number;
+  value: number;
+  color: string;
+}
+
+export interface PerformanceMetric {
+  metric: string;
+  current: number;
+  previous: number;
+  target: number;
+  unit: string;
+}
+
 export interface AnalyticsData {
-  totalRevenue: number; totalPolicies: number; conversionRate: number; averagePremium: number;
-  monthlyData: MonthlyData[]; riskDistribution: RiskDistribution[]; topVehicleBrands: BrandData[];
-  customerSegments: SegmentData[]; performanceMetrics: PerformanceMetric[];
+  totalRevenue: number;
+  totalPolicies: number;
+  conversionRate: number;
+  averagePremium: number;
+  monthlyData: MonthlyData[];
+  riskDistribution: RiskDistribution[];
+  topVehicleBrands: BrandData[];
+  customerSegments: SegmentData[];
+  performanceMetrics: PerformanceMetric[];
 }
 
-/* Bildirim vs. */
+// ---------- Notifications ----------
 export interface Notification {
-  id: string; title: string; message: string;
+  id: string;
+  title: string;
+  message: string;
   type: 'info' | 'success' | 'warning' | 'error';
-  isRead: boolean; createdAt: string; actionUrl?: string; actionText?: string;
+  isRead: boolean;
+  createdAt: string;              // ISO
+  actionUrl?: string | null;      // <<< tek, tutarlı tanım
+  actionText?: string | null;     // <<< tek, tutarlı tanım
 }
 
+// ---------- Policies ----------
 export type Policy = {
-  id: string
-  policyNumber: string
-  companyName?: string
-  coverageAmount: number
-  finalPremium: number
-  totalDiscount?: number
-  riskScore?: number
-  status: 'active' | 'expired' | 'pending' | 'cancelled'
-  paymentStatus: 'paid' | 'pending' | 'overdue'
-  startDate: string
-  endDate: string
-  isAutoRenewal?: boolean
+  id: string;
+  policyNumber: string;
+  companyName?: string;
+  coverageAmount: number;
+  finalPremium: number;
+  totalDiscount?: number;
+  riskScore?: number;
+  status: 'active' | 'expired' | 'pending' | 'cancelled';
+  paymentStatus: 'paid' | 'pending' | 'overdue';
+  startDate: string;
+  endDate: string;
+  isAutoRenewal?: boolean;
   vehicle: {
-    plateNumber: string
-    brand: string
-    model: string
-    year: number
-  }
+    plateNumber: string;
+    brand: string;
+    model: string;
+    year: number;
+  };
   driver: {
-    firstName: string
-    lastName: string
-    tcNumber?: string
-    profession?: string
-  }
-  discounts: { name: string; percentage: number }[]
-}
+    firstName: string;
+    lastName: string;
+    tcNumber?: string;
+    profession?: string;
+  };
+  discounts: { name: string; percentage: number }[];
+};
 
 export type PolicyInstallment = {
-  id: string
-  installmentNumber: number
-  amount: number
-  dueDate: string
-  status: 'paid' | 'pending' | 'overdue'
-  paidDate?: string
-}
+  id: string;
+  installmentNumber: number;
+  amount: number;
+  dueDate: string;
+  status: 'paid' | 'pending' | 'overdue';
+  paidDate?: string;
+};
 
 export type PolicyClaim = {
-  id: string
-  claimNumber: string
-  status: 'paid' | 'approved' | 'investigating' | 'rejected'
-  description: string
-  incidentDate: string
-  reportDate: string
-  approvedAmount?: number
-  estimatedAmount: number
-}
+  id: string;
+  claimNumber: string;
+  status: 'paid' | 'approved' | 'investigating' | 'rejected';
+  description: string;
+  incidentDate: string;
+  reportDate: string;
+  approvedAmount?: number;
+  estimatedAmount: number;
+};
+
+// ---------- Users ----------
 export type User = {
-  id: string;        
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -166,3 +218,47 @@ export type UpdateUserDto = {
   lastName: string;
   email: string;
 };
+
+// ---------- App Settings / Profile ----------
+export type ThemeMode = 'light' | 'dark' | 'auto';
+
+export interface SystemSettings {
+  language: 'tr' | 'en';
+  timezone: string;
+  currency: 'TRY' | 'USD' | 'EUR';
+  dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
+  theme: ThemeMode;
+  autoSave: boolean;
+  sessionTimeout: number; // dakika
+}
+
+export type UserRole = 'agent' | 'manager' | 'admin';
+
+export interface UserProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  role: UserRole;
+  agencyName: string;
+  agencyCode: string;
+  licenseNumber: string;
+  joinDate: string;   // ISO veya yyyy-MM-dd
+  lastLogin: string;  // ISO veya yyyy-MM-dd
+  isActive: boolean;
+  avatar?: string | null;
+}
+
+export interface NotificationSettings {
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+  pushNotifications: boolean;
+  quoteExpiry: boolean;
+  newCustomer: boolean;
+  policyRenewal: boolean;
+  systemUpdates: boolean;
+  marketingEmails: boolean;
+  weeklyReports: boolean;
+  monthlyReports: boolean;
+}

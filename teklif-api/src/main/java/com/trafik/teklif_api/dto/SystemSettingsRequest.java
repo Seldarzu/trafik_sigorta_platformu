@@ -2,14 +2,15 @@ package com.trafik.teklif_api.dto;
 
 import java.time.LocalDate;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-
+/**
+ * Patch/Upsert için: tüm alanlar opsiyonel.
+ * Null gelen alanlar güncellenmez.
+ */
 public record SystemSettingsRequest(
-    @NotBlank String agencyName,
-    @NotBlank String agencyCode,
-    @NotBlank String licenseNumber,
-    @NotNull LocalDate joinDate,
-    @NotNull LocalDate lastLogin,
-    @NotNull Boolean isActive
+    String agencyName,
+    String agencyCode,
+    String licenseNumber,
+    LocalDate joinDate,
+    LocalDate lastLogin,
+    Boolean isActive
 ) {}

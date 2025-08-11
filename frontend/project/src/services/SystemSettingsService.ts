@@ -1,8 +1,27 @@
+// src/services/SystemSettingsService.ts
 import api from '../api/axios';
-import { SystemSettings } from '../types';
+
+export type SystemSettingsResponse = {
+  agencyName: string | null;
+  agencyCode: string | null;
+  licenseNumber: string | null;
+  joinDate: string | null;   // yyyy-MM-dd
+  lastLogin: string | null;  // yyyy-MM-dd veya ISO
+  isActive: boolean | null;
+};
+
+export type SystemSettingsRequest = {
+  agencyName?: string | null;
+  agencyCode?: string | null;
+  licenseNumber?: string | null;
+  joinDate?: string | null;
+  lastLogin?: string | null;
+  isActive?: boolean | null;
+};
 
 export const SystemSettingsService = {
-  get: () => api.get<SystemSettings>('/system/settings').then(r => r.data),
-  update: (dto: SystemSettings) =>
-    api.put<SystemSettings>('/system/settings', dto).then(r => r.data),
+  get: async () => (await api.get<SystemSettingsResponse>('/system/settings')).data,
+  update: async (body: SystemSettingsRequest) => {
+    await api.put('/system/settings', body);
+  },
 };

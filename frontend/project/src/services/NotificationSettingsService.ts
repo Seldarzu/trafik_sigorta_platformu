@@ -1,9 +1,13 @@
+// src/services/NotificationSettingsService.ts
 import api from '../api/axios';
-import { NotificationSettings } from '../types';
+import type { NotificationSettings } from '../types';
+
+// types.ts içindeki NotificationSettings ile aynı alanları kullanıyoruz
 
 export const NotificationSettingsService = {
-  get: (userId: string) =>
-    api.get<NotificationSettings>(`/users/${userId}/notification-settings`).then(r => r.data),
-  update: (userId: string, settings: NotificationSettings) =>
-    api.put<NotificationSettings>(`/users/${userId}/notification-settings`, settings).then(r => r.data),
+  get: async (userId: string) =>
+    (await api.get<NotificationSettings>(`/users/${userId}/notification-settings`)).data,
+
+  update: async (userId: string, settings: NotificationSettings) =>
+    api.put(`/users/${userId}/notification-settings`, settings),
 };
