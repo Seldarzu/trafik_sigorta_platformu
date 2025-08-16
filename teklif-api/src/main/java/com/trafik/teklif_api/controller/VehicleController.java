@@ -1,6 +1,11 @@
 package com.trafik.teklif_api.controller;
 
-import com.trafik.teklif_api.dto.*;
+import com.trafik.teklif_api.dto.CreateVehicleRequest;
+import com.trafik.teklif_api.dto.UpdateVehicleRequest;
+import com.trafik.teklif_api.dto.VehicleBrandResponse;
+import com.trafik.teklif_api.dto.VehicleModelResponse;
+import com.trafik.teklif_api.dto.VehicleResponse;
+import com.trafik.teklif_api.dto.PlateValidationResponse;
 import com.trafik.teklif_api.service.VehicleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,26 +22,26 @@ public class VehicleController {
 
     private final VehicleService service;
 
-    /** Yeni araç ekler. */
+    /** Yeni araç ekler (DTO). */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public VehicleResponse create(@Valid @RequestBody CreateVehicleRequest req) {
         return service.create(req);
     }
 
-    /** Tüm araçları listeler. */
+    /** Tüm araçları listeler (DTO). */
     @GetMapping
     public List<VehicleResponse> getAll() {
         return service.getAll();
     }
 
-    /** ID’ye göre araç getirir. */
+    /** ID’ye göre araç getirir (DTO). */
     @GetMapping("/{id}")
     public VehicleResponse getById(@PathVariable UUID id) {
         return service.getById(id);
     }
 
-    /** Mevcut aracı günceller. */
+    /** Aracı günceller (DTO). */
     @PutMapping("/{id}")
     public VehicleResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateVehicleRequest req) {
         return service.update(id, req);
@@ -49,15 +54,13 @@ public class VehicleController {
         service.delete(id);
     }
 
-    /** ---- GEREKEN YENİLER: ---- */
-
-    /** Tüm aktif marka listesini döner. */
+    /** Tüm aktif marka listesi. */
     @GetMapping("/brands")
     public List<VehicleBrandResponse> brands() {
         return service.getBrands();
     }
 
-    /** Bir markaya ait aktif modelleri döner. */
+    /** Bir markaya ait aktif modeller. */
     @GetMapping("/models/{brand}")
     public List<VehicleModelResponse> models(@PathVariable String brand) {
         return service.getModelsByBrand(brand);

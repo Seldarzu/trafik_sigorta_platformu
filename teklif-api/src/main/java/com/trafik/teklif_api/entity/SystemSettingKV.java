@@ -6,34 +6,48 @@ import lombok.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
-@Table(name = "system_settings")
+@Table(name = "system_settings_kv")
 public class SystemSettingKV {
 
+    /* ---- KIMLIK ---- */
     @Id
-    @Column(name = "id", columnDefinition = "uuid")
+    @GeneratedValue
+    @Column(name = "id", columnDefinition = "uuid", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "setting_key", nullable = false, unique = true)
+    /* ---- ANAHTAR & DEĞER ---- */
+    @Column(name = "setting_key", length = 80, nullable = false, unique = true)
     private String key;
 
-    @Column(name = "setting_value")
+    // jsonb tipinde değer saklanır
+    @Column(name = "setting_value", columnDefinition = "jsonb", nullable = false)
     private String value;
 
-    @Column(name = "setting_type")
+    /* ---- EK ALANLAR ---- */
+    @Column(name = "setting_type", length = 20)
     private String type; // string|number|boolean|json
 
     @Column(name = "description")
     private String description;
 
     @Column(name = "is_public")
-    private Boolean isPublic;
+    private Boolean isPublic = Boolean.FALSE;
 
-    @Column(name = "created_at")
-    private OffsetDateTime createdAt;
+    /* ---- ZAMAN DAMGALARI ---- */
+    @Column(name = "created_at", columnDefinition = "timestamptz")
+    private OffsetDateTime createdAt = OffsetDateTime.now();
 
-    @Column(name = "updated_at")
-    private OffsetDateTime updatedAt;
+    @Column(name = "updated_at", columnDefinition = "timestamptz")
+    private OffsetDateTime updatedAt = OffsetDateTime.now();
+
+    /* ---- OTOMATIK GÜNCELLEME ---- */
+    @PreUpdate
+    public void onUpdate() {
+        this.updatedAt = OffsetDateTime.now();
+    }
 }

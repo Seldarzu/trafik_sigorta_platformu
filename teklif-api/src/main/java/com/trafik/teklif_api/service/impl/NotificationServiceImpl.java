@@ -26,7 +26,7 @@ public class NotificationServiceImpl implements NotificationService {
                 n.getTitle(),
                 n.getMessage(),
                 n.getType(),
-                n.getIsRead(),
+                n.isRead(),          // <— düzeltildi
                 n.getCreatedAt(),
                 n.getActionUrl(),
                 n.getActionText()
@@ -38,7 +38,7 @@ public class NotificationServiceImpl implements NotificationService {
     public void markAsRead(UUID id) {
         Notification n = repo.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Notification " + id + " bulunamadı"));
-        n.setIsRead(true);
+        n.setRead(true);             // <— düzeltildi
         repo.save(n);
     }
 }

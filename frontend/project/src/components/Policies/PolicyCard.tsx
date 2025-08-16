@@ -26,7 +26,7 @@ const PolicyCard: React.FC<PolicyCardProps> = ({ policy, onSelect, onRenew }) =>
       case 'expired': return 'Süresi Dolmuş';
       case 'pending': return 'Beklemede';
       case 'cancelled': return 'İptal Edilmiş';
-      default: return status;
+      default: return status ?? '-';
     }
   };
 
@@ -44,15 +44,22 @@ const PolicyCard: React.FC<PolicyCardProps> = ({ policy, onSelect, onRenew }) =>
       case 'paid': return 'Ödendi';
       case 'pending': return 'Beklemede';
       case 'overdue': return 'Gecikmiş';
-      default: return status;
+      default: return status ?? '-';
     }
   };
 
-  const endDate = new Date(policy.endDate);
+  const endDate = policy?.endDate ? new Date(policy.endDate) : null;
   const today = new Date();
-  const daysUntilExpiry = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  const isExpiringSoon = daysUntilExpiry <= 30 && daysUntilExpiry > 0;
-  const isExpired = endDate < today;
+  const daysUntilExpiry = endDate ? Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : NaN;
+  const isExpiringSoon = Number.isFinite(daysUntilExpiry) && daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+  const isExpired = endDate ? endDate < today : false;
+
+  // Null-safe helpers
+  const v = policy?.vehicle ?? ({} as any);
+  const d = policy?.driver ?? ({} as any);
+
+  const startDateStr = policy?.startDate ? new Date(policy.startDate).toLocaleDateString('tr-TR') : '-';
+  const endDateStr   = policy?.endDate   ? new Date(policy.endDate).toLocaleDateString('tr-TR')   : '-';
 
   return (
     <div className={`bg-white border rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 ${
@@ -62,12 +69,12 @@ const PolicyCard: React.FC<PolicyCardProps> = ({ policy, onSelect, onRenew }) =>
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-2">
-              <h3 className="text-lg font-bold text-gray-900">{policy.policyNumber}</h3>
-              <span className={`px-3 py-1 text-xs font-bold rounded-full ${getStatusColor(policy.status)}`}>
-                {getStatusText(policy.status)}
+              <h3 className="text-lg font-bold text-gray-900">{policy?.policyNumber ?? '-'}</h3>
+              <span className={`px-3 py-1 text-xs font-bold rounded-full ${getStatusColor(policy?.status ?? '')}`}>
+                {getStatusText(policy?.status ?? '')}
               </span>
-              <span className={`px-3 py-1 text-xs font-bold rounded-full ${getPaymentStatusColor(policy.paymentStatus)}`}>
-                {getPaymentStatusText(policy.paymentStatus)}
+              <span className={`px-3 py-1 text-xs font-bold rounded-full ${getPaymentStatusColor(policy?.paymentStatus ?? '')}`}>
+                {getPaymentStatusText(policy?.paymentStatus ?? '')}
               </span>
             </div>
 
@@ -100,9 +107,9 @@ const PolicyCard: React.FC<PolicyCardProps> = ({ policy, onSelect, onRenew }) =>
             >
               <Download className="h-5 w-5" />
             </button>
-            {(isExpired || isExpiringSoon) && (
+            {(isExpired || isExpiringSoon) && policy?.id && (
               <button
-                onClick={() => onRenew(policy.id)}
+                onClick={() => onRenew(String(policy.id))}
                 className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-colors duration-200"
                 title="Poliçeyi Yenile"
               >
@@ -117,10 +124,10 @@ const PolicyCard: React.FC<PolicyCardProps> = ({ policy, onSelect, onRenew }) =>
             <Car className="h-5 w-5 text-blue-600 flex-shrink-0" />
             <div>
               <p className="text-sm font-medium text-gray-900">
-                {policy.vehicle.brand} {policy.vehicle.model}
+                {(v?.brand ?? '-')}{v?.model ? ` ${v.model}` : ''}
               </p>
               <p className="text-xs text-gray-500">
-                {policy.vehicle.plateNumber} • {policy.vehicle.year}
+                {(v?.plateNumber ?? '—')}{v?.year ? ` • ${v.year}` : ''}
               </p>
             </div>
           </div>
@@ -129,10 +136,10 @@ const PolicyCard: React.FC<PolicyCardProps> = ({ policy, onSelect, onRenew }) =>
             <User className="h-5 w-5 text-blue-600 flex-shrink-0" />
             <div>
               <p className="text-sm font-medium text-gray-900">
-                {policy.driver.firstName} {policy.driver.lastName}
+                {(d?.firstName ?? '-')}{d?.lastName ? ` ${d.lastName}` : ''}
               </p>
               <p className="text-xs text-gray-500">
-                {policy.driver.profession ?? ''}
+                {d?.profession ?? ''}
               </p>
             </div>
           </div>
@@ -141,11 +148,11 @@ const PolicyCard: React.FC<PolicyCardProps> = ({ policy, onSelect, onRenew }) =>
             <DollarSign className="h-5 w-5 text-green-600 flex-shrink-0" />
             <div>
               <p className="text-sm font-medium text-gray-900">
-                ₺{(policy.finalPremium ?? 0).toLocaleString('tr-TR')}
+                ₺{Number(policy?.finalPremium ?? 0).toLocaleString('tr-TR')}
               </p>
-              {(policy.totalDiscount ?? 0) > 0 && (
+              {Number(policy?.totalDiscount ?? 0) > 0 && (
                 <p className="text-xs text-green-600">
-                  ₺{(policy.totalDiscount ?? 0).toLocaleString('tr-TR')} indirim
+                  ₺{Number(policy?.totalDiscount ?? 0).toLocaleString('tr-TR')} indirim
                 </p>
               )}
             </div>
@@ -154,21 +161,17 @@ const PolicyCard: React.FC<PolicyCardProps> = ({ policy, onSelect, onRenew }) =>
           <div className="flex items-center space-x-3">
             <Calendar className="h-5 w-5 text-purple-600 flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium text-gray-900">
-                {new Date(policy.startDate).toLocaleDateString('tr-TR')}
-              </p>
-              <p className="text-xs text-gray-500">
-                Bitiş: {new Date(policy.endDate).toLocaleDateString('tr-TR')}
-              </p>
+              <p className="text-sm font-medium text-gray-900">{startDateStr}</p>
+              <p className="text-xs text-gray-500">Bitiş: {endDateStr}</p>
             </div>
           </div>
         </div>
 
         <div className="flex items-center justify-between text-sm text-gray-600 pt-4 border-t border-gray-100">
           <div className="flex items-center space-x-4">
-            <span>Sigorta Şirketi: <span className="font-medium">{policy.companyName ?? '-'}</span></span>
-            <span>Teminat: <span className="font-medium">₺{(policy.coverageAmount ?? 0).toLocaleString('tr-TR')}</span></span>
-            {policy.isAutoRenewal && (
+            <span>Sigorta Şirketi: <span className="font-medium">{policy?.companyName ?? '-'}</span></span>
+            <span>Teminat: <span className="font-medium">₺{Number(policy?.coverageAmount ?? 0).toLocaleString('tr-TR')}</span></span>
+            {policy?.isAutoRenewal && (
               <span className="inline-flex items-center text-green-600">
                 <CheckCircle className="h-4 w-4 mr-1" />
                 Otomatik Yenileme
@@ -177,11 +180,11 @@ const PolicyCard: React.FC<PolicyCardProps> = ({ policy, onSelect, onRenew }) =>
           </div>
         </div>
 
-        {(policy.discounts?.length ?? 0) > 0 && (
+        {(policy?.discounts?.length ?? 0) > 0 && (
           <div className="mt-3 pt-3 border-t border-gray-100">
             <p className="text-sm text-gray-600 mb-1">Uygulanan İndirimler:</p>
             <div className="flex flex-wrap gap-2">
-              {policy.discounts!.map((d, i) => (
+              {policy!.discounts!.map((d, i) => (
                 <span key={i} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                   {d.name} (%{d.percentage})
                 </span>

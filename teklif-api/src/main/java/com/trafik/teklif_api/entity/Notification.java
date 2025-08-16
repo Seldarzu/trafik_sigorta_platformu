@@ -1,35 +1,34 @@
 // src/main/java/com/trafik/teklif_api/entity/Notification.java
 package com.trafik.teklif_api.entity;
 
+import com.trafik.teklif_api.model.BaseEntity;
 import jakarta.persistence.*;
-import lombok.*;
-import java.time.OffsetDateTime;
-import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+import java.time.OffsetDateTime;
+
+@Getter
+@Setter
 @Entity
 @Table(name = "notifications")
-public class Notification {
+public class Notification extends BaseEntity {
 
-    @Id
-    @Column(name = "id", columnDefinition = "uuid")
-    private UUID id;  // DB: UUID PK
+    @ManyToOne(fetch = FetchType.LAZY, optional = true) // nullable olabilir
+    @JoinColumn(name = "user_id")
+    private User user;
 
-    @Column(name = "user_id", columnDefinition = "uuid")
-    private UUID userId; // nullable olabilir
-
-    @Column(name = "title", nullable = false, length = 255)
+    @Column(nullable = false, length = 160)
     private String title;
 
-    @Column(name = "message", nullable = false, columnDefinition = "text")
+    @Column(columnDefinition = "text", nullable = false)
     private String message;
 
-    @Column(name = "type", length = 20)
-    private String type; // info | success | warning | error
+    @Column(nullable = false, length = 20)
+    private String type = "info"; // info | success | warning | error
 
-    @Column(name = "is_read")
-    private Boolean isRead = Boolean.FALSE;
+    @Column(name = "is_read", nullable = false)
+    private boolean isRead = false;
 
     @Column(name = "action_url")
     private String actionUrl;

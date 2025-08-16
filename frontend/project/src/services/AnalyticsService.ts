@@ -1,24 +1,50 @@
-// src/services/AnalyticsService.ts
-import api from '../api/axios';
+import api from '@/api/axios';
 
 export type Period = 'week' | 'month' | 'quarter' | 'year';
 
+const base = (api as any)?.defaults?.baseURL ?? '';
+const ANALYTICS_PREFIX =
+  typeof base === 'string' && base.endsWith('/api') ? '/analytics' : '/api/analytics';
+
+async function safeGet<T>(url: string, fallback: T, params?: Record<string, any>): Promise<T> {
+  try {
+    const { data } = await api.get(url, { params });
+    return data as T;
+  } catch {
+    return fallback;
+  }
+}
+
 export const AnalyticsService = {
-  getSummary: async () =>
-    (await api.get('/analytics/summary')).data,
+  getSummary: () =>
+    safeGet(`${ANALYTICS_PREFIX}/summary`, {
+      totalRevenue: 0,
+      totalPolicies: 0,
+      conversionRate: 0,
+      averagePremium: 0,
+    } as any),
 
-  getMonthly: async (period: Period) =>
-    (await api.get('/analytics/monthly', { params: { period } })).data,
+  getMonthly: (period: Period) =>
+    safeGet(`${ANALYTICS_PREFIX}/monthly`, [] as any[], { period }),
 
-  getRiskDistribution: async (period: Period) =>
-    (await api.get('/analytics/risk-distribution', { params: { period } })).data,
+  getRiskDistribution: (period: Period) =>
+    safeGet(`${ANALYTICS_PREFIX}/risk-distribution`, [] as any[], { period }),
 
-  getCustomerSegments: async (period: Period) =>
-    (await api.get('/analytics/customer-segments', { params: { period } })).data,
+  getCustomerSegments: (period: Period) =>
+    safeGet(`${ANALYTICS_PREFIX}/customer-segments`, [] as any[], { period }),
 
-  getPerformanceMetrics: async (period: Period) =>
-    (await api.get('/analytics/performance-metrics', { params: { period } })).data,
+  getPerformanceMetrics: (period: Period) =>
+    safeGet(`${ANALYTICS_PREFIX}/performance-metrics`, [] as any[], { period }),
 
-  getTopBrands: async (period: Period) =>
-    (await api.get('/analytics/top-brands', { params: { period } })).data,
+  getTopBrands: (period: Period) =>
+    safeGet(`${ANALYTICS_PREFIX}/top-brands`, [] as any[], { period }),
+
+  // alias'lar
+  dashboard: () => safeGet(`${ANALYTICS_PREFIX}/dashboard`, {} as any),
+  sales: (period: Period = 'month') =>
+    safeGet(`${ANALYTICS_PREFIX}/sales`, [] as any[], { period }),
+  performance: () => safeGet(`${ANALYTICS_PREFIX}/performance`, {} as any),
+  revenue: () => safeGet(`${ANALYTICS_PREFIX}/revenue`, {} as any),
 };
+
+export default AnalyticsService;

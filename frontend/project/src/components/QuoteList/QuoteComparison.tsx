@@ -89,7 +89,7 @@ const QuoteComparison: React.FC<QuoteComparisonProps> = ({ quotes, onClose }) =>
                   {quotes.map(q => (
                     <td key={q.id} className="p-4 text-center">
                       <div className={`text-2xl font-bold ${isBest(q,'finalPremium') ? 'text-green-600' : 'text-gray-900'}`}>
-                        ₺{(q.finalPremium ?? q.premiumAmount ?? 0).toLocaleString('tr-TR')}
+                        ₺{(q.finalPremium ?? q.premium ?? 0).toLocaleString('tr-TR')}
                       </div>
                       {isBest(q,'finalPremium') && (
                         <div className="text-xs text-green-600 font-medium mt-1 flex items-center justify-center">
@@ -241,7 +241,7 @@ const QuoteComparison: React.FC<QuoteComparisonProps> = ({ quotes, onClose }) =>
                   return q ? (
                     <div>
                       <div className="font-bold text-lg">{q.uniqueRefNo ?? q.id}</div>
-                      <div className="text-green-600">₺{(q.finalPremium ?? q.premiumAmount ?? 0).toLocaleString('tr-TR')}</div>
+                      <div className="text-green-600">₺{(q.finalPremium ?? q.premium ?? 0).toLocaleString('tr-TR')}</div>
                       <div className="text-sm text-gray-600">{q.companyName ?? '-'}</div>
                     </div>
                   ) : null;

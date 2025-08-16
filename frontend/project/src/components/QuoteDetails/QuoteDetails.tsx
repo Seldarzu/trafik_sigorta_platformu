@@ -17,13 +17,35 @@ import {
   AlertTriangle,
   Info
 } from 'lucide-react';
-import { Quote } from '../../types';
+import { Quote, VehicleSummary, DriverSummary } from '../../types';
 
 interface QuoteDetailsProps {
   quote: Quote;
   onBack: () => void;
   onEdit: () => void;
 }
+
+/** UI'de tam araç bilgisini gösterebilmek için VehicleSummary'i genişletiyoruz */
+type VehicleLike = VehicleSummary & {
+  engineSize?: string;
+  fuelType?: string;
+  usage?: string;
+  cityCode?: string;
+};
+
+/** UI'de tam sürücü bilgisini gösterebilmek için DriverSummary'i genişletiyoruz */
+type DriverLike = DriverSummary & {
+  tcNumber?: string;
+  birthDate?: string;     // ISO
+  licenseDate?: string;   // ISO
+  gender?: string;
+  maritalStatus?: string;
+  education?: string;
+  hasAccidents?: boolean;
+  accidentCount?: number;
+  hasViolations?: boolean;
+  violationCount?: number;
+};
 
 const fuelTypeMap: Record<string, string> = {
   gasoline: 'Benzin',
@@ -56,7 +78,11 @@ const educationMap: Record<string, string> = {
 };
 
 const QuoteDetails: React.FC<QuoteDetailsProps> = ({ quote, onBack, onEdit }) => {
-  const getRiskLevelColor = (level: string) => {
+  // Güvenli kısayollar (fallback'ler)
+  const v: VehicleLike = (quote.vehicle as VehicleLike) ?? { brand: '-', model: '', year: 0, plateNumber: '' };
+  const d: DriverLike  = (quote.driver  as DriverLike)  ?? { firstName: '', lastName: '' };
+
+  const getRiskLevelColor = (level?: string) => {
     switch (level) {
       case 'low':    return 'from-green-500 to-emerald-500';
       case 'medium': return 'from-yellow-500 to-orange-500';
@@ -65,7 +91,7 @@ const QuoteDetails: React.FC<QuoteDetailsProps> = ({ quote, onBack, onEdit }) =>
     }
   };
 
-  const getRiskLevelText = (level: string) => {
+  const getRiskLevelText = (level?: string) => {
     switch (level) {
       case 'low':    return 'Düşük Risk';
       case 'medium': return 'Orta Risk';
@@ -74,7 +100,7 @@ const QuoteDetails: React.FC<QuoteDetailsProps> = ({ quote, onBack, onEdit }) =>
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status?: string) => {
     switch (status) {
       case 'active':  return 'from-green-500 to-emerald-500';
       case 'expired': return 'from-red-500 to-pink-500';
@@ -84,26 +110,30 @@ const QuoteDetails: React.FC<QuoteDetailsProps> = ({ quote, onBack, onEdit }) =>
     }
   };
 
-  const getStatusText = (status: string) => {
+  const getStatusText = (status?: string) => {
     switch (status) {
       case 'active':  return 'Aktif';
       case 'expired': return 'Süresi Dolmuş';
       case 'sold':    return 'Satıldı';
       case 'draft':   return 'Taslak';
-      default:        return status;
+      default:        return status ?? '-';
     }
   };
 
-  const getFuelTypeText    = (ft: string) => fuelTypeMap[ft]    || ft;
-  const getUsageText       = (u: string)  => usageMap[u]        || u;
-  const getGenderText      = (g: string)  => g === 'male' ? 'Erkek' : g === 'female' ? 'Kadın' : g;
-  const getMaritalText     = (m: string)  => maritalMap[m]      || m;
-  const getEducationText   = (e: string)  => educationMap[e]    || e;
+  const getFuelTypeText  = (ft?: string) => (ft ? (fuelTypeMap[ft] || ft) : '-');
+  const getUsageText     = (u?: string)  => (u ? (usageMap[u] || u) : '-');
+  const getGenderText    = (g?: string)  => (g === 'male' ? 'Erkek' : g === 'female' ? 'Kadın' : (g ?? '-'));
+  const getMaritalText   = (m?: string)  => (m ? (maritalMap[m] || m) : '-');
+  const getEducationText = (e?: string)  => (e ? (educationMap[e] || e) : '-');
+
+  const fmtDate = (value?: string) =>
+    value ? new Date(value).toLocaleDateString('tr-TR') : '-';
 
   const isExpiringSoon = () => {
-    const valid   = new Date(quote.validUntil).getTime();
-    const today   = Date.now();
-    const days    = Math.ceil((valid - today) / (1000 * 60 * 60 * 24));
+    if (!quote.validUntil) return false;
+    const valid = new Date(quote.validUntil).getTime();
+    const today = Date.now();
+    const days  = Math.ceil((valid - today) / (1000 * 60 * 60 * 24));
     return days > 0 && days <= 7;
   };
 
@@ -113,7 +143,7 @@ const QuoteDetails: React.FC<QuoteDetailsProps> = ({ quote, onBack, onEdit }) =>
     if (navigator.share) {
       navigator.share({
         title: `Teklif ${quote.id}`,
-        text: `${quote.vehicle.brand} ${quote.vehicle.model} için trafik sigortası teklifi`,
+        text: `${v.brand} ${v.model} için trafik sigortası teklifi`,
         url: window.location.href
       });
     } else {
@@ -121,6 +151,16 @@ const QuoteDetails: React.FC<QuoteDetailsProps> = ({ quote, onBack, onEdit }) =>
       alert('Link panoya kopyalandı!');
     }
   };
+
+  const premiumBase   = quote.premium ?? 0;
+  const finalPremium  = quote.finalPremium ?? 0;
+  const totalDiscount = quote.totalDiscount ?? 0;
+  const riskScore     = quote.riskScore ?? 0;
+  const coverage      = quote.coverageAmount ?? 0;
+  const discounts     = quote.discounts ?? [];
+  const companyName   = quote.companyName ?? '';
+  const createdAtStr  = fmtDate(quote.createdAt);
+  const validUntilStr = fmtDate(quote.validUntil);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50">
@@ -171,12 +211,8 @@ const QuoteDetails: React.FC<QuoteDetailsProps> = ({ quote, onBack, onEdit }) =>
             <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
               <div>
                 <h2 className="text-2xl font-bold mb-2">Trafik Sigortası Teklifi</h2>
-                <p className="text-blue-100">
-                  Teklif Tarihi: {new Date(quote.createdAt).toLocaleDateString('tr-TR')}
-                </p>
-                <p className="text-blue-100">
-                  Geçerlilik: {new Date(quote.validUntil).toLocaleDateString('tr-TR')}
-                </p>
+                <p className="text-blue-100">Teklif Tarihi: {createdAtStr}</p>
+                <p className="text-blue-100">Geçerlilik: {validUntilStr}</p>
               </div>
               <div className="space-y-1 text-right">
                 <div
@@ -205,26 +241,26 @@ const QuoteDetails: React.FC<QuoteDetailsProps> = ({ quote, onBack, onEdit }) =>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Temel Prim:</span>
-                      <span>₺{quote.premium.toLocaleString('tr-TR')}</span>
+                      <span>₺{premiumBase.toLocaleString('tr-TR')}</span>
                     </div>
-                    {quote.totalDiscount > 0 && (
+                    {totalDiscount > 0 && (
                       <div className="flex justify-between text-green-600">
                         <span>Toplam İndirim:</span>
-                        <span>-₺{quote.totalDiscount.toLocaleString('tr-TR')}</span>
+                        <span>-₺{totalDiscount.toLocaleString('tr-TR')}</span>
                       </div>
                     )}
                     <div className="border-t border-green-200 pt-2 flex justify-between font-bold text-gray-900">
                       <span>Net Prim:</span>
-                      <span>₺{quote.finalPremium.toLocaleString('tr-TR')}</span>
+                      <span>₺{finalPremium.toLocaleString('tr-TR')}</span>
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="text-3xl font-bold text-green-600">
-                    ₺{quote.finalPremium.toLocaleString('tr-TR')}
+                    ₺{finalPremium.toLocaleString('tr-TR')}
                   </p>
-                  <p className="text-sm text-gray-600">{quote.companyName}</p>
-                  <p className="text-sm text-gray-600">Risk Skoru: {quote.riskScore}/100</p>
+                  <p className="text-sm text-gray-600">{companyName || '-'}</p>
+                  <p className="text-sm text-gray-600">Risk Skoru: {riskScore}/100</p>
                 </div>
               </div>
             </section>
@@ -237,20 +273,20 @@ const QuoteDetails: React.FC<QuoteDetailsProps> = ({ quote, onBack, onEdit }) =>
                   <Car className="h-6 w-6 text-blue-600 mr-2" /> Araç Bilgileri
                 </h3>
                 <div className="space-y-3">
-                  <div className="flex justify-between"><span>Plaka:</span><span className="font-medium">{quote.vehicle.plateNumber}</span></div>
-                  <div className="flex justify-between"><span>Marka/Model:</span><span className="font-medium">{quote.vehicle.brand} {quote.vehicle.model}</span></div>
-                  <div className="flex justify-between"><span>Yıl:</span><span className="font-medium">{quote.vehicle.year}</span></div>
-                  {quote.vehicle.engineSize && (
-                    <div className="flex justify-between"><span>Motor Hacmi:</span><span className="font-medium">{quote.vehicle.engineSize}</span></div>
+                  <div className="flex justify-between"><span>Plaka:</span><span className="font-medium">{v.plateNumber || '-'}</span></div>
+                  <div className="flex justify-between"><span>Marka/Model:</span><span className="font-medium">{v.brand || '-'} {v.model || ''}</span></div>
+                  <div className="flex justify-between"><span>Yıl:</span><span className="font-medium">{v.year || '-'}</span></div>
+                  {v.engineSize && (
+                    <div className="flex justify-between"><span>Motor Hacmi:</span><span className="font-medium">{v.engineSize}</span></div>
                   )}
-                  {quote.vehicle.fuelType && (
-                    <div className="flex justify-between"><span>Yakıt Tipi:</span><span className="font-medium">{getFuelTypeText(quote.vehicle.fuelType)}</span></div>
+                  {v.fuelType && (
+                    <div className="flex justify-between"><span>Yakıt Tipi:</span><span className="font-medium">{getFuelTypeText(v.fuelType)}</span></div>
                   )}
-                  {quote.vehicle.usage && (
-                    <div className="flex justify-between"><span>Kullanım:</span><span className="font-medium">{getUsageText(quote.vehicle.usage)}</span></div>
+                  {v.usage && (
+                    <div className="flex justify-between"><span>Kullanım:</span><span className="font-medium">{getUsageText(v.usage)}</span></div>
                   )}
-                  {quote.vehicle.cityCode && (
-                    <div className="flex justify-between"><span>Şehir Kodu:</span><span className="font-medium">{quote.vehicle.cityCode}</span></div>
+                  {v.cityCode && (
+                    <div className="flex justify-between"><span>Şehir Kodu:</span><span className="font-medium">{v.cityCode}</span></div>
                   )}
                 </div>
               </div>
@@ -261,23 +297,27 @@ const QuoteDetails: React.FC<QuoteDetailsProps> = ({ quote, onBack, onEdit }) =>
                   <User className="h-6 w-6 text-purple-600 mr-2" /> Sürücü Bilgileri
                 </h3>
                 <div className="space-y-3">
-                  <div className="flex justify-between"><span>Ad Soyad:</span><span className="font-medium">{quote.driver.firstName} {quote.driver.lastName}</span></div>
-                  <div className="flex justify-between"><span>TC Kimlik:</span><span className="font-medium">{quote.driver.tcNumber}</span></div>
-                  <div className="flex justify-between"><span>Doğum:</span><span className="font-medium">{new Date(quote.driver.birthDate).toLocaleDateString('tr-TR')}</span></div>
-                  {quote.driver.licenseDate && (
-                    <div className="flex justify-between"><span>Ehliyet Tarihi:</span><span className="font-medium">{new Date(quote.driver.licenseDate).toLocaleDateString('tr-TR')}</span></div>
+                  <div className="flex justify-between"><span>Ad Soyad:</span><span className="font-medium">{(d.firstName || '-') + ' ' + (d.lastName || '')}</span></div>
+                  {d.tcNumber && (
+                    <div className="flex justify-between"><span>TC Kimlik:</span><span className="font-medium">{d.tcNumber}</span></div>
                   )}
-                  {quote.driver.gender && (
-                    <div className="flex justify-between"><span>Cinsiyet:</span><span className="font-medium">{getGenderText(quote.driver.gender)}</span></div>
+                  {d.birthDate && (
+                    <div className="flex justify-between"><span>Doğum:</span><span className="font-medium">{fmtDate(d.birthDate)}</span></div>
                   )}
-                  {quote.driver.maritalStatus && (
-                    <div className="flex justify-between"><span>Medeni Durum:</span><span className="font-medium">{getMaritalText(quote.driver.maritalStatus)}</span></div>
+                  {d.licenseDate && (
+                    <div className="flex justify-between"><span>Ehliyet Tarihi:</span><span className="font-medium">{fmtDate(d.licenseDate)}</span></div>
                   )}
-                  {quote.driver.education && (
-                    <div className="flex justify-between"><span>Eğitim:</span><span className="font-medium">{getEducationText(quote.driver.education)}</span></div>
+                  {d.gender && (
+                    <div className="flex justify-between"><span>Cinsiyet:</span><span className="font-medium">{getGenderText(d.gender)}</span></div>
                   )}
-                  {quote.driver.profession && (
-                    <div className="flex justify-between"><span>Meslek:</span><span className="font-medium">{quote.driver.profession}</span></div>
+                  {d.maritalStatus && (
+                    <div className="flex justify-between"><span>Medeni Durum:</span><span className="font-medium">{getMaritalText(d.maritalStatus)}</span></div>
+                  )}
+                  {d.education && (
+                    <div className="flex justify-between"><span>Eğitim:</span><span className="font-medium">{getEducationText(d.education)}</span></div>
+                  )}
+                  {d.profession && (
+                    <div className="flex justify-between"><span>Meslek:</span><span className="font-medium">{d.profession}</span></div>
                   )}
                 </div>
               </div>
@@ -290,19 +330,19 @@ const QuoteDetails: React.FC<QuoteDetailsProps> = ({ quote, onBack, onEdit }) =>
               </h3>
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-orange-600">{quote.riskScore}/100</p>
+                  <p className="text-3xl font-bold text-orange-600">{riskScore}/100</p>
                   <p className="text-sm text-gray-600">Risk Skoru</p>
                   <span className={`inline-flex mt-2 px-3 py-1 text-xs font-bold rounded-full bg-gradient-to-r ${getRiskLevelColor(quote.riskLevel)}`}>
                     {getRiskLevelText(quote.riskLevel)}
                   </span>
                 </div>
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-blue-600">{quote.driver.hasAccidents ? quote.driver.accidentCount : 0}</p>
+                  <p className="text-3xl font-bold text-blue-600">{d.hasAccidents ? (d.accidentCount ?? 0) : 0}</p>
                   <p className="text-sm text-gray-600">Kaza Geçmişi</p>
                   <p className="text-xs text-gray-500">Son 5 yıl</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-purple-600">{quote.driver.hasViolations ? quote.driver.violationCount : 0}</p>
+                  <p className="text-3xl font-bold text-purple-600">{d.hasViolations ? (d.violationCount ?? 0) : 0}</p>
                   <p className="text-sm text-gray-600">Trafik Cezası</p>
                   <p className="text-xs text-gray-500">Son 2 yıl</p>
                 </div>
@@ -318,9 +358,9 @@ const QuoteDetails: React.FC<QuoteDetailsProps> = ({ quote, onBack, onEdit }) =>
                 <div>
                   <h4 className="font-semibold mb-3">Zorunlu Mali Sorumluluk</h4>
                   <div className="space-y-2">
-                    <div className="flex justify-between"><span>Kişi Başı Zarar:</span><span>₺{quote.coverageAmount.toLocaleString('tr-TR')}</span></div>
-                    <div className="flex justify-between"><span>Kaza Başı Zarar:</span><span>₺{(quote.coverageAmount * 2).toLocaleString('tr-TR')}</span></div>
-                    <div className="flex justify-between"><span>Maddi Zarar:</span><span>₺{Math.floor(quote.coverageAmount * 0.4).toLocaleString('tr-TR')}</span></div>
+                    <div className="flex justify-between"><span>Kişi Başı Zarar:</span><span>₺{coverage.toLocaleString('tr-TR')}</span></div>
+                    <div className="flex justify-between"><span>Kaza Başı Zarar:</span><span>₺{(coverage * 2).toLocaleString('tr-TR')}</span></div>
+                    <div className="flex justify-between"><span>Maddi Zarar:</span><span>₺{Math.floor(coverage * 0.4).toLocaleString('tr-TR')}</span></div>
                   </div>
                 </div>
                 <div>
@@ -336,24 +376,24 @@ const QuoteDetails: React.FC<QuoteDetailsProps> = ({ quote, onBack, onEdit }) =>
             </section>
 
             {/* İndirimler */}
-            {quote.discounts.length > 0 && (
+            {(discounts.length) > 0 && (
               <section className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
                 <h3 className="flex items-center mb-4 text-lg font-bold text-gray-900">
                   <Award className="h-6 w-6 text-green-600 mr-2" /> Uygulanan İndirimler
                 </h3>
                 <div className="space-y-3">
-                  {quote.discounts.map((d, i) => (
+                  {discounts.map((dsc, i) => (
                     <div key={i} className="flex items-center justify-between p-3 bg-white rounded-lg">
                       <div className="flex items-center">
                         <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mr-3">
                           <Award className="h-4 w-4 text-white" />
                         </div>
                         <div>
-                          <h4 className="font-medium">{d.name}</h4>
-                          <p className="text-sm">%{d.percentage} indirim</p>
+                          <h4 className="font-medium">{dsc.name}</h4>
+                          <p className="text-sm">%{dsc.percentage} indirim</p>
                         </div>
                       </div>
-                      <div className="font-bold text-green-600">-₺{d.amount.toLocaleString('tr-TR')}</div>
+                      <div className="font-bold text-green-600">-₺{dsc.amount.toLocaleString('tr-TR')}</div>
                     </div>
                   ))}
                 </div>
@@ -367,15 +407,15 @@ const QuoteDetails: React.FC<QuoteDetailsProps> = ({ quote, onBack, onEdit }) =>
               </h3>
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="font-semibold mb-2">{quote.companyName}</h4>
+                  <h4 className="font-semibold mb-2">{companyName || '-'}</h4>
                   <p className="text-sm text-gray-600">Merkez: İstanbul, Türkiye</p>
                   <p className="text-sm text-gray-600">Telefon: 0850 XXX XX XX</p>
-                  <p className="text-sm text-gray-600">Web: www.{quote.companyName.toLowerCase().replace(' ', '')}.com.tr</p>
+                  <p className="text-sm text-gray-600">Web: www.{(companyName || '').toLowerCase().replace(' ', '')}.com.tr</p>
                 </div>
                 <div>
                   <h4 className="font-semibold mb-2">Acente Bilgileri</h4>
                   <p className="text-sm text-gray-600">Acente: SigortaTeklif Pro</p>
-                  <p className="text-sm text-gray-600">Acente Kodu: {quote.agentId}</p>
+                  <p className="text-sm text-gray-600">Acente Kodu: {quote.agentId ?? '-'}</p>
                   <p className="text-sm text-gray-600">Sorumlu: Ahmet Yılmaz</p>
                 </div>
               </div>
@@ -387,7 +427,7 @@ const QuoteDetails: React.FC<QuoteDetailsProps> = ({ quote, onBack, onEdit }) =>
                 <Info className="h-6 w-6 text-yellow-600 mr-2" /> Önemli Bilgiler ve Şartlar
               </h3>
               <div className="space-y-2 text-sm text-gray-700">
-                <p>• Bu teklif {new Date(quote.validUntil).toLocaleDateString('tr-TR')} tarihine kadar geçerlidir.</p>
+                <p>• Bu teklif {validUntilStr} tarihine kadar geçerlidir.</p>
                 <p>• Poliçe başlangıç tarihi müşteri tarafından belirlenecektir.</p>
                 <p>• Prim ödemesi poliçe başlangıç tarihinden önce yapılmalıdır.</p>
                 <p>• Araç muayene raporu ve ruhsat fotokopisi gereklidir.</p>

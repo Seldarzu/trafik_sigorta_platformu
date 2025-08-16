@@ -1,6 +1,8 @@
 package com.trafik.teklif_api.controller;
 
 import com.trafik.teklif_api.dto.*;
+import com.trafik.teklif_api.dto.settings.SystemSettingsRequest;
+import com.trafik.teklif_api.dto.settings.SystemSettingsResponse;
 import com.trafik.teklif_api.service.NotificationSettingsService;
 import com.trafik.teklif_api.service.SystemSettingsService;
 import lombok.RequiredArgsConstructor;

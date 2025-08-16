@@ -1,118 +1,66 @@
 package com.trafik.teklif_api.entity;
 
+import com.trafik.teklif_api.model.BaseEntity;
+import com.trafik.teklif_api.model.enums.Education;
+import com.trafik.teklif_api.model.enums.Gender;
+import com.trafik.teklif_api.model.enums.MaritalStatus;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name = "drivers")
-public class Driver {
+@Getter
+@Setter
+public class Driver extends BaseEntity {
 
-    @Id
-    @GeneratedValue
-    @UuidGenerator
-    @Column(columnDefinition = "uuid", updatable = false, nullable = false)
-    private UUID id;
+  @Column(name = "first_name", nullable = false, length = 80)
+  private String firstName;
 
-    @Column(name = "first_name", nullable = false)
-    private String firstName;
+  @Column(name = "last_name", nullable = false, length = 80)
+  private String lastName;
 
-    @Column(name = "last_name", nullable = false)
-    private String lastName;
+  @Column(name = "tc_number", nullable = false, length = 16, unique = true)
+  private String tcNumber;
 
-    @Column(name = "tc_number", nullable = false, unique = true, length = 11)
-    private String tcNumber;
+  @Column(name = "birth_date", nullable = false)
+  private LocalDate birthDate;
 
-    @Column(name = "birth_date", nullable = false)
-    private LocalDate birthDate;
+  // FE’de opsiyonel -> nullable
+  @Column(name = "license_date")
+  private LocalDate licenseDate;
 
-    @Column(name = "license_date")
-    private LocalDate licenseDate;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "gender", length = 8)
+  private Gender gender;
 
-    @Column
-    private String gender;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "marital_status", length = 10)
+  private MaritalStatus maritalStatus;
 
-    @Column(name = "marital_status")
-    private String maritalStatus;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "education", length = 16)
+  private Education education;
 
-    @Column
-    private String education;
+  @Column(name = "profession", length = 120)
+  private String profession;
 
-    @Column
-    private String profession;
+  @Column(name = "has_accidents", nullable = false)
+  private boolean hasAccidents = false;
 
-    @Column(name = "has_accidents", nullable = false)
-    private Boolean hasAccidents = false;
+  @Column(name = "accident_count", nullable = false)
+  private int accidentCount = 0;
 
-    @Column(name = "accident_count", nullable = false)
-    private Integer accidentCount = 0;
+  @Column(name = "has_violations", nullable = false)
+  private boolean hasViolations = false;
 
-    @Column(name = "has_violations", nullable = false)
-    private Boolean hasViolations = false;
+  @Column(name = "violation_count", nullable = false)
+  private int violationCount = 0;
 
-    @Column(name = "violation_count", nullable = false)
-    private Integer violationCount = 0;
-
-    @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
-    private OffsetDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false, insertable = false)
-    private OffsetDateTime updatedAt;
-
-    // ❗ Artık OneToOne değil, OneToMany (LAZY)
-    @OneToMany(mappedBy = "driver", fetch = FetchType.LAZY, cascade = {})
-    private List<Quote> quotes = new ArrayList<>();
-
-    public Driver() {}
-
-    public UUID getId() { return id; }
-
-    public String getFirstName() { return firstName; }
-    public void setFirstName(String firstName) { this.firstName = firstName; }
-
-    public String getLastName() { return lastName; }
-    public void setLastName(String lastName) { this.lastName = lastName; }
-
-    public String getTcNumber() { return tcNumber; }
-    public void setTcNumber(String tcNumber) { this.tcNumber = tcNumber; }
-
-    public LocalDate getBirthDate() { return birthDate; }
-    public void setBirthDate(LocalDate birthDate) { this.birthDate = birthDate; }
-
-    public LocalDate getLicenseDate() { return licenseDate; }
-    public void setLicenseDate(LocalDate licenseDate) { this.licenseDate = licenseDate; }
-
-    public String getGender() { return gender; }
-    public void setGender(String gender) { this.gender = gender; }
-
-    public String getMaritalStatus() { return maritalStatus; }
-    public void setMaritalStatus(String maritalStatus) { this.maritalStatus = maritalStatus; }
-
-    public String getEducation() { return education; }
-    public void setEducation(String education) { this.education = education; }
-
-    public String getProfession() { return profession; }
-    public void setProfession(String profession) { this.profession = profession; }
-
-    public Boolean getHasAccidents() { return hasAccidents; }
-    public void setHasAccidents(Boolean hasAccidents) { this.hasAccidents = hasAccidents; }
-
-    public Integer getAccidentCount() { return accidentCount; }
-    public void setAccidentCount(Integer accidentCount) { this.accidentCount = accidentCount; }
-
-    public Boolean getHasViolations() { return hasViolations; }
-    public void setHasViolations(Boolean hasViolations) { this.hasViolations = hasViolations; }
-
-    public Integer getViolationCount() { return violationCount; }
-    public void setViolationCount(Integer violationCount) { this.violationCount = violationCount; }
-
-    public OffsetDateTime getCreatedAt() { return createdAt; }
-    public OffsetDateTime getUpdatedAt() { return updatedAt; }
-
-    public List<Quote> getQuotes() { return quotes; }
-    public void setQuotes(List<Quote> quotes) { this.quotes = quotes; }
+  @OneToMany(mappedBy = "driver", fetch = FetchType.LAZY)
+  private List<Quote> quotes = new ArrayList<>();
 }

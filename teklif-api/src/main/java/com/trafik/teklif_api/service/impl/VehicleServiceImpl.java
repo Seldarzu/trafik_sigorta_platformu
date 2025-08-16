@@ -2,12 +2,17 @@ package com.trafik.teklif_api.service.impl;
 
 import com.trafik.teklif_api.dto.*;
 import com.trafik.teklif_api.entity.Vehicle;
-import com.trafik.teklif_api.repository.*;
+import com.trafik.teklif_api.model.enums.FuelType;
+import com.trafik.teklif_api.model.enums.UsageType;
+import com.trafik.teklif_api.repository.VehicleBrandRepository;
+import com.trafik.teklif_api.repository.VehicleModelRepository;
+import com.trafik.teklif_api.repository.VehicleRepository;
 import com.trafik.teklif_api.service.VehicleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -37,8 +42,8 @@ public class VehicleServiceImpl implements VehicleService {
         v.setModel(req.model());
         v.setYear(req.year());
         v.setEngineSize(req.engineSize());
-        v.setFuelType(req.fuelType());
-        v.setUsage(req.usage());
+        v.setFuelType(parseFuelType(req.fuelType()));
+        v.setUsage(parseUsageType(req.usage()));
         v.setCityCode(req.cityCode());
         Vehicle saved = vehicleRepo.save(v);
         return map(saved);
@@ -66,8 +71,8 @@ public class VehicleServiceImpl implements VehicleService {
         v.setModel(req.model());
         v.setYear(req.year());
         v.setEngineSize(req.engineSize());
-        v.setFuelType(req.fuelType());
-        v.setUsage(req.usage());
+        v.setFuelType(parseFuelType(req.fuelType()));
+        v.setUsage(parseUsageType(req.usage()));
         v.setCityCode(req.cityCode());
         Vehicle updated = vehicleRepo.save(v);
         return map(updated);
@@ -98,8 +103,31 @@ public class VehicleServiceImpl implements VehicleService {
 
     @Override
     public PlateValidationResponse validatePlate(String plate) {
-        boolean valid = Pattern.matches("^[0-9]{2}[A-Z]{1,3}[0-9]{2,4}$", plate.replaceAll("\\s+","").toUpperCase());
+        boolean valid = Pattern.matches(
+                "^[0-9]{2}[A-Z]{1,3}[0-9]{2,4}$",
+                plate.replaceAll("\\s+","").toUpperCase()
+        );
         return new PlateValidationResponse(plate, valid);
+    }
+
+    /* -------------------- helpers -------------------- */
+
+    private FuelType parseFuelType(String s) {
+        if (s == null) throw new IllegalArgumentException("fuelType boş olamaz");
+        try {
+            return FuelType.valueOf(s.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Geçersiz fuelType: " + s);
+        }
+    }
+
+    private UsageType parseUsageType(String s) {
+        if (s == null) throw new IllegalArgumentException("usage boş olamaz");
+        try {
+            return UsageType.valueOf(s.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Geçersiz usage: " + s);
+        }
     }
 
     private VehicleResponse map(Vehicle v) {
@@ -110,9 +138,9 @@ public class VehicleServiceImpl implements VehicleService {
             v.getModel(),
             v.getYear(),
             v.getEngineSize(),
-            v.getFuelType(),
-            v.getUsage(),
+            v.getFuelType() != null ? v.getFuelType().name() : null,
+            v.getUsage() != null ? v.getUsage().name() : null,
             v.getCityCode()
         );
-    }
+        }
 }

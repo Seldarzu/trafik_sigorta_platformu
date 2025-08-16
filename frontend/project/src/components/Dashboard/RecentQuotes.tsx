@@ -34,6 +34,10 @@ const getRiskLevelText = (level: string) => {
   }
 };
 
+// Güvenli tarih formatlayıcı
+const formatDateTR = (iso?: string) =>
+  iso ? new Date(iso).toLocaleDateString('tr-TR') : '—';
+
 const RecentQuotes: React.FC<Props> = ({ onPageChange }) => {
   const { data, loading, error } = useQuotes();
   const recent: Quote[] = data?.slice(0, 5) ?? [];
@@ -60,12 +64,12 @@ const RecentQuotes: React.FC<Props> = ({ onPageChange }) => {
           <div className="p-6 text-gray-500">Teklif yok</div>
         ) : recent.map((quote) => {
           // Optional chaining ve fallback'ler
-          const brand     = quote.vehicle?.brand     ?? '—';
-          const model     = quote.vehicle?.model     ?? '';
-          const year      = quote.vehicle?.year      ?? '';
+          const brand     = quote.vehicle?.brand      ?? '—';
+          const model     = quote.vehicle?.model      ?? '';
+          const year      = quote.vehicle?.year       ?? '';
           const plate     = quote.vehicle?.plateNumber ?? '';
-          const firstName = quote.driver?.firstName  ?? '';
-          const lastName  = quote.driver?.lastName   ?? '';
+          const firstName = quote.driver?.firstName   ?? '';
+          const lastName  = quote.driver?.lastName    ?? '';
 
           return (
             <div
@@ -95,7 +99,7 @@ const RecentQuotes: React.FC<Props> = ({ onPageChange }) => {
                   <div className="flex items-center">
                     <Calendar className="h-4 w-4 text-gray-400 mr-1" />
                     <span className="text-xs text-gray-500">
-                      {new Date(quote.createdAt).toLocaleDateString('tr-TR')}
+                      {formatDateTR(quote.createdAt)}
                     </span>
                   </div>
                   <span
@@ -112,7 +116,7 @@ const RecentQuotes: React.FC<Props> = ({ onPageChange }) => {
               <div className="flex items-center space-x-4">
                 <div className="text-right">
                   <p className="text-lg font-bold text-gray-900">
-                    ₺{quote.finalPremium?.toLocaleString('tr-TR') ?? '0'}
+                    ₺{(quote.finalPremium ?? 0).toLocaleString('tr-TR')}
                   </p>
                   <p className="text-sm text-gray-500">
                     {quote.companyName ?? ''}

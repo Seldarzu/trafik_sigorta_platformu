@@ -12,5 +12,7 @@ public interface DriverRepository extends JpaRepository<Driver, UUID> {
     Optional<Driver> findByTcNumber(String tcNumber);
 
     // Bir quote id'sinden sürücüye gitmek gerekiyorsa
-    Optional<Driver> findByQuotes_Id(String quoteId);
+    Optional<Driver> findByQuotes_Id(String id);
+
+
 }

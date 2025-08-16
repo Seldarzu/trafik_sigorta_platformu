@@ -3,7 +3,7 @@ package com.trafik.teklif_api.service.impl;
 import com.trafik.teklif_api.dto.stats.ConversionResponse;
 import com.trafik.teklif_api.dto.stats.CountResponse;
 import com.trafik.teklif_api.entity.Quote;
-import com.trafik.teklif_api.model.QuoteStatus;
+import com.trafik.teklif_api.model.enums.QuoteStatus;
 import com.trafik.teklif_api.repository.CustomerRepository;
 import com.trafik.teklif_api.repository.PolicyRepository;
 import com.trafik.teklif_api.repository.QuoteRepository;

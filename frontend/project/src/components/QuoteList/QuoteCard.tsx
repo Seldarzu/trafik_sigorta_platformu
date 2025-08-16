@@ -152,7 +152,7 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
             <DollarSign className="h-5 w-5 text-green-600 flex-shrink-0" />
             <div>
               <p className="text-sm font-medium text-gray-900">
-                ₺{(quote.finalPremium ?? quote.premiumAmount)?.toLocaleString?.('tr-TR') ?? '-'}
+                ₺{(quote.finalPremium ?? quote.premium)?.toLocaleString?.('tr-TR') ?? '-'}
               </p>
               {(quote.totalDiscount ?? 0) > 0 && (
                 <p className="text-xs text-green-600">

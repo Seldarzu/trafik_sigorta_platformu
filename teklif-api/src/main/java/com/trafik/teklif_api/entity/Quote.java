@@ -1,79 +1,114 @@
 package com.trafik.teklif_api.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.trafik.teklif_api.model.AuditEntity;
+import com.trafik.teklif_api.model.enums.QuoteStatus;
+import com.trafik.teklif_api.model.enums.RiskLevel;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
-import com.trafik.teklif_api.model.QuoteStatus;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
 @Entity
 @Table(name = "quotes")
-public class Quote {
+public class Quote extends AuditEntity {
 
+    /* ---- PRIMARY KEY (STRING) ---- */
     @Id
-    @Column(name = "id", length = 50)
+    @Column(name = "id", length = 50, nullable = false)
     private String id;
 
-    @Column(name = "customer_id", nullable = false)
-    private UUID customerId;
+    /* ---- İLİŞKİLER ---- */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
 
-    // ❗ OneToOne yerine ManyToOne (LAZY)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;
 
-    // ❗ OneToOne yerine ManyToOne (LAZY)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "driver_id", nullable = false)
     private Driver driver;
 
-    @Column(name = "premium", nullable = false, precision = 12, scale = 2)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "agent_id", nullable = false)
+    private User agent;
+
+    /* ---- TUTARLAR / TEMEL ALANLAR ---- */
+    @Column(name = "premium", precision = 12, scale = 2, nullable = false)
     private BigDecimal premium;
 
-    @Column(name = "coverage_amount", nullable = false, precision = 15, scale = 2)
+    @Column(name = "coverage_amount", precision = 15, scale = 2, nullable = false)
     private BigDecimal coverageAmount;
 
-    @Column(name = "final_premium", nullable = false, precision = 12, scale = 2)
-    private BigDecimal finalPremium;
+    @Column(name = "final_premium", precision = 12, scale = 2, nullable = false)
+    private BigDecimal finalPremium = BigDecimal.ZERO;
 
     @Column(name = "total_discount", precision = 12, scale = 2)
     private BigDecimal totalDiscount = BigDecimal.ZERO;
 
+    /* ---- RİSK & DURUM ---- */
     @Column(name = "risk_score", nullable = false)
     private Integer riskScore;
 
-    @Column(name = "risk_level", length = 20)
-    private String riskLevel;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "risk_level", nullable = false, length = 20)
+    private RiskLevel riskLevel;
 
-    @Column(name = "valid_until", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 12)
+    private QuoteStatus status = QuoteStatus.DRAFT;
+
+    /* ---- GEÇERLİLİK ---- */
+    @Column(name = "valid_until", columnDefinition = "timestamptz", nullable = false)
     private OffsetDateTime validUntil;
 
-    // ❗ Ya @Enumerated ya @Convert — ikisi birden olmaz.
-    // Converter kullanmıyorsan bu satır kalsın, converter'ı kaldır:
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private QuoteStatus status;
+    /* ---- JSONB DETAYLAR ---- */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "coverage_details", columnDefinition = "jsonb")
+    private String coverageDetailsJson;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    /* ---- İLİŞKİLİ LİSTELER ---- */
+    @OneToMany(mappedBy = "quote", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<QuoteDiscount> discounts = new ArrayList<>();
 
-    @Column(name = "updated_at", nullable = false, insertable = false)
-    private OffsetDateTime updatedAt;
+    /* ---- SEÇİLEN ŞİRKET ---- */
+    @Column(name = "selected_company_id", columnDefinition = "uuid")
+    private UUID selectedCompanyId;
 
-    public Quote() {}
+    /* ---- ID OLUŞTURMA ---- */
+    @PrePersist
+    private void ensureId() {
+        if (this.id == null || this.id.isBlank()) {
+            this.id = UUID.randomUUID().toString();
+        }
+    }
 
-    // getters & setters
+    /* =======================
+       GETTERS / SETTERS
+       ======================= */
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
-    public UUID getCustomerId() { return customerId; }
-    public void setCustomerId(UUID customerId) { this.customerId = customerId; }
+    public Customer getCustomer() { return customer; }
+    public void setCustomer(Customer customer) { this.customer = customer; }
 
     public Vehicle getVehicle() { return vehicle; }
     public void setVehicle(Vehicle vehicle) { this.vehicle = vehicle; }
 
     public Driver getDriver() { return driver; }
     public void setDriver(Driver driver) { this.driver = driver; }
+
+    public User getAgent() { return agent; }
+    public void setAgent(User agent) { this.agent = agent; }
 
     public BigDecimal getPremium() { return premium; }
     public void setPremium(BigDecimal premium) { this.premium = premium; }
@@ -89,18 +124,40 @@ public class Quote {
 
     public Integer getRiskScore() { return riskScore; }
     public void setRiskScore(Integer riskScore) { this.riskScore = riskScore; }
+    public void setRiskScore(int riskScore) { this.riskScore = riskScore; }
 
-    public String getRiskLevel() { return riskLevel; }
-    public void setRiskLevel(String riskLevel) { this.riskLevel = riskLevel; }
-
-    public OffsetDateTime getValidUntil() { return validUntil; }
-    public void setValidUntil(OffsetDateTime validUntil) { this.validUntil = validUntil; }
+    public RiskLevel getRiskLevel() { return riskLevel; }
+    public void setRiskLevel(RiskLevel riskLevel) { this.riskLevel = riskLevel; }
 
     public QuoteStatus getStatus() { return status; }
     public void setStatus(QuoteStatus status) { this.status = status; }
 
-    public OffsetDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
+    public OffsetDateTime getValidUntil() { return validUntil; }
+    public void setValidUntil(OffsetDateTime validUntil) { this.validUntil = validUntil; }
 
-    public OffsetDateTime getUpdatedAt() { return updatedAt; }
+    public String getCoverageDetailsJson() { return coverageDetailsJson; }
+    public void setCoverageDetailsJson(String coverageDetailsJson) { this.coverageDetailsJson = coverageDetailsJson; }
+
+    public List<QuoteDiscount> getDiscounts() { return discounts; }
+    public void setDiscounts(List<QuoteDiscount> discounts) { this.discounts = discounts; }
+
+    public UUID getSelectedCompanyId() { return selectedCompanyId; }
+    public void setSelectedCompanyId(UUID selectedCompanyId) { this.selectedCompanyId = selectedCompanyId; }
+
+    /* ---- Yardımcı metodlar ---- */
+    public Quote addDiscount(QuoteDiscount discount) {
+        if (discount != null) {
+            discounts.add(discount);
+            discount.setQuote(this);
+        }
+        return this;
+    }
+
+    public Quote removeDiscount(QuoteDiscount discount) {
+        if (discount != null) {
+            discounts.remove(discount);
+            discount.setQuote(null);
+        }
+        return this;
+    }
 }

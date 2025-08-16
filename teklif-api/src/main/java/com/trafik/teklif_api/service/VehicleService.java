@@ -14,4 +14,3 @@ public interface VehicleService {
     List<VehicleModelResponse> getModelsByBrand(String brand);
     PlateValidationResponse validatePlate(String plate);
 }
-

@@ -11,7 +11,7 @@ import java.util.UUID;
 
 @Repository
 public interface QuoteRepository
-        extends JpaRepository<Quote, String>, JpaSpecificationExecutor<Quote> {
+        extends JpaRepository<Quote, String>, JpaSpecificationExecutor<Quote> { // <— ID tipi String
 
     @EntityGraph(attributePaths = {"driver", "vehicle"})
     List<Quote> findTop10ByOrderByCreatedAtDesc();
@@ -19,7 +19,6 @@ public interface QuoteRepository
     @EntityGraph(attributePaths = {"driver", "vehicle"})
     List<Quote> findByCustomerIdOrderByCreatedAtDesc(UUID customerId);
 
-    // getAll(page,size) için kullandığımız imza
     @EntityGraph(attributePaths = {"driver", "vehicle"})
     Page<Quote> findAllBy(Pageable pageable);
 }

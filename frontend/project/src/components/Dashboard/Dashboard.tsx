@@ -1,4 +1,3 @@
-// src/components/Dashboard/Dashboard.tsx
 import React, { useEffect, useState } from 'react';
 import { FileText, TrendingUp, DollarSign, Users, Loader2, Car, Clock } from 'lucide-react';
 
@@ -86,7 +85,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
     );
   }
 
-  // Son iki ayı kıyasla (yoksa 0)
   const lastIndex = analytics.monthlyData.length - 1;
   const prevIndex = analytics.monthlyData.length - 2;
   const last = lastIndex >= 0 ? analytics.monthlyData[lastIndex] : undefined;
