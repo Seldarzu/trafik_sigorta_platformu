@@ -1,4 +1,5 @@
 package com.trafik.teklif_api.dto;
+
 import java.util.UUID;
 
 public record VehicleResponse(
@@ -8,7 +9,7 @@ public record VehicleResponse(
     String model,
     Integer year,
     String engineSize,
-    String fuelType,
-    String usage,
+    String fuelType, // enum adı (String)
+    String usage,    // enum adı (String)
     String cityCode
 ) {}

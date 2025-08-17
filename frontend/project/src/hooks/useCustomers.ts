@@ -1,33 +1,19 @@
-import { useState, useEffect } from 'react';
+// src/hooks/useCustomers.ts
+import { useQuery } from 'react-query';
 import { CustomerService } from '../services/CustomerService';
 import { Customer } from '../types';
 
 export function useCustomers() {
-  const [data, setData] = useState<Customer[] | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<Error | null>(null);
+  const query = useQuery<Customer[], Error>(
+    ['customers'],
+    () => CustomerService.list(),
+    { staleTime: 60_000 } // 1dk cache
+  );
 
-  const fetchData = () => {
-    setLoading(true);
-    CustomerService.list()
-      .then(res => {
-        // Enum değerlerini lowercase yapalım ki filtreler çalışsın
-        const normalized = res.map(c => ({
-          ...c,
-          status: c.status.toLowerCase() as Customer['status'],
-          customerValue: c.customerValue.toLowerCase() as Customer['customerValue'],
-          riskProfile: c.riskProfile.toLowerCase() as Customer['riskProfile'],
-        }));
-        setData(normalized);
-      })
-      .catch(err => setError(err))
-      .finally(() => setLoading(false));
+  return {
+    data: query.data,
+    loading: query.isLoading,
+    error: query.error ?? null,
+    refetch: query.refetch,
   };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Refetch fonksiyonunu dışa açıyoruz
-  return { data, loading, error, refetch: fetchData };
 }

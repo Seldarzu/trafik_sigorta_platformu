@@ -2,7 +2,6 @@
 package com.trafik.teklif_api.service;
 
 import com.trafik.teklif_api.dto.*;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,9 +14,11 @@ public interface PolicyService {
     void delete(UUID id);
     PolicyResponse renew(UUID id);
     List<PolicyResponse> getExpiring();
-    List<PolicyResponse> search(Optional<UUID> customerId,
-                                Optional<LocalDate> from,
-                                Optional<LocalDate> to,
-                                int page,
-                                int size);
+    List<PolicyResponse> search(Optional<String> text,
+                            Optional<String> status,
+                            Optional<java.util.UUID> customerId,
+                            Optional<java.time.LocalDate> from,
+                            Optional<java.time.LocalDate> to,
+                            int page, int size);
+
 }

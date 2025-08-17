@@ -1,28 +1,30 @@
 package com.trafik.teklif_api.controller;
 
-import com.trafik.teklif_api.dto.*;
-import com.trafik.teklif_api.service.NotificationSettingsService;
-import lombok.RequiredArgsConstructor;
+import com.trafik.teklif_api.dto.NotificationSettingsDto;
+import com.trafik.teklif_api.dto.UpdateNotificationSettingsRequest;
+import com.trafik.teklif_api.service.UserSettingsService;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
 
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/users/{userId}/notification-settings")
-@RequiredArgsConstructor
 public class NotificationSettingsController {
-    private final NotificationSettingsService service;
+
+    private final UserSettingsService service;
+
+    public NotificationSettingsController(UserSettingsService service) {
+        this.service = service;
+    }
 
     @GetMapping
-    public NotificationSettingsResponse get(@PathVariable Long userId) {
-        return service.get(userId);
+    public NotificationSettingsDto get(@PathVariable UUID userId) {
+        return service.getByUserId(userId);
     }
 
     @PutMapping
-    public void update(
-      @PathVariable Long userId,
-      @Valid @RequestBody NotificationSettingsRequest req
-    ) {
-        service.update(userId, req);
+    public NotificationSettingsDto update(@PathVariable UUID userId,
+                                          @RequestBody UpdateNotificationSettingsRequest req) {
+        return service.upsert(userId, req);
     }
 }

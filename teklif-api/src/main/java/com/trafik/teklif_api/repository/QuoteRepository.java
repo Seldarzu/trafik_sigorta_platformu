@@ -1,17 +1,24 @@
 package com.trafik.teklif_api.repository;
 
 import com.trafik.teklif_api.entity.Quote;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.UUID;
 
 @Repository
 public interface QuoteRepository
-        extends JpaRepository<Quote, String>,
-                JpaSpecificationExecutor<Quote> {
+        extends JpaRepository<Quote, String>, JpaSpecificationExecutor<Quote> { // <— ID tipi String
 
+    @EntityGraph(attributePaths = {"driver", "vehicle"})
     List<Quote> findTop10ByOrderByCreatedAtDesc();
-    List<Quote> findByCustomerIdOrderByCreatedAtDesc(java.util.UUID customerId);
+
+    @EntityGraph(attributePaths = {"driver", "vehicle"})
+    List<Quote> findByCustomerIdOrderByCreatedAtDesc(UUID customerId);
+
+    @EntityGraph(attributePaths = {"driver", "vehicle"})
+    Page<Quote> findAllBy(Pageable pageable);
 }

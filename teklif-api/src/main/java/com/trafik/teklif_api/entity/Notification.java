@@ -1,25 +1,44 @@
+// src/main/java/com/trafik/teklif_api/entity/Notification.java
 package com.trafik.teklif_api.entity;
 
-import lombok.*;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import com.trafik.teklif_api.model.BaseEntity;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+import java.time.OffsetDateTime;
+
+@Getter
+@Setter
 @Entity
 @Table(name = "notifications")
-public class Notification {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Notification extends BaseEntity {
 
-    private String type;     // info, warning, error
+    @ManyToOne(fetch = FetchType.LAZY, optional = true) // nullable olabilir
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @Column(nullable = false, length = 160)
+    private String title;
+
+    @Column(columnDefinition = "text", nullable = false)
     private String message;
-    private Boolean isRead;
-    private LocalDateTime date;
+
+    @Column(nullable = false, length = 20)
+    private String type = "info"; // info | success | warning | error
+
+    @Column(name = "is_read", nullable = false)
+    private boolean isRead = false;
+
+    @Column(name = "action_url")
+    private String actionUrl;
+
+    @Column(name = "action_text", length = 100)
+    private String actionText;
+
+    @Column(name = "created_at")
+    private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private OffsetDateTime updatedAt;
 }

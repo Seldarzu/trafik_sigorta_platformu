@@ -10,85 +10,70 @@ interface QuoteCardProps {
   canSelect?: boolean;
 }
 
-const QuoteCard: React.FC<QuoteCardProps> = ({ 
-  quote, 
-  onSelect, 
-  onToggleCompare, 
-  isSelected = false, 
-  canSelect = true 
+const QuoteCard: React.FC<QuoteCardProps> = ({
+  quote,
+  onSelect,
+  onToggleCompare,
+  isSelected = false,
+  canSelect = true
 }) => {
-  const getRiskLevelColor = (level: string) => {
+  const getRiskLevelColor = (level?: string) => {
     switch (level) {
-      case 'low':
-        return 'text-green-600 bg-green-100';
-      case 'medium':
-        return 'text-yellow-600 bg-yellow-100';
-      case 'high':
-        return 'text-red-600 bg-red-100';
-      default:
-        return 'text-gray-600 bg-gray-100';
+      case 'low': return 'text-green-600 bg-green-100';
+      case 'medium': return 'text-yellow-600 bg-yellow-100';
+      case 'high': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
     }
   };
 
-  const getRiskLevelText = (level: string) => {
+  const getRiskLevelText = (level?: string) => {
     switch (level) {
-      case 'low':
-        return 'Düşük Risk';
-      case 'medium':
-        return 'Orta Risk';
-      case 'high':
-        return 'Yüksek Risk';
-      default:
-        return 'Belirsiz';
+      case 'low': return 'Düşük Risk';
+      case 'medium': return 'Orta Risk';
+      case 'high': return 'Yüksek Risk';
+      default: return 'Belirsiz';
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status?: string) => {
     switch (status) {
-      case 'active':
-        return 'text-green-600 bg-green-100';
-      case 'expired':
-        return 'text-red-600 bg-red-100';
-      case 'sold':
-        return 'text-blue-600 bg-blue-100';
-      case 'draft':
-        return 'text-gray-600 bg-gray-100';
-      default:
-        return 'text-gray-600 bg-gray-100';
+      case 'active': return 'text-green-600 bg-green-100';
+      case 'expired': return 'text-red-600 bg-red-100';
+      case 'sold': return 'text-blue-600 bg-blue-100';
+      case 'draft': return 'text-gray-600 bg-gray-100';
+      default: return 'text-gray-600 bg-gray-100';
     }
   };
 
-  const getStatusText = (status: string) => {
+  const getStatusText = (status?: string) => {
     switch (status) {
-      case 'active':
-        return 'Aktif';
-      case 'expired':
-        return 'Süresi Dolmuş';
-      case 'sold':
-        return 'Satıldı';
-      case 'draft':
-        return 'Taslak';
-      default:
-        return status;
+      case 'active': return 'Aktif';
+      case 'expired': return 'Süresi Dolmuş';
+      case 'sold': return 'Satıldı';
+      case 'draft': return 'Taslak';
+      default: return status ?? '-';
     }
   };
 
   const isExpiringSoon = () => {
+    if (!quote.validUntil) return false;
     const validUntil = new Date(quote.validUntil);
     const today = new Date();
-    const daysUntilExpiry = Math.ceil((validUntil.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return daysUntilExpiry <= 7 && daysUntilExpiry > 0;
+    const days = Math.ceil((validUntil.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return days <= 7 && days > 0;
   };
 
   return (
-    <div className={`bg-white border rounded-lg shadow-sm hover:shadow-md transition-all duration-200 ${
-      isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
-    }`}>
+    <div
+      className={`bg-white border rounded-lg shadow-sm hover:shadow-md transition-all duration-200 ${
+        isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+      }`}
+    >
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-2">
-              <h3 className="text-lg font-semibold text-gray-900">{quote.id}</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{quote.uniqueRefNo ?? quote.id}</h3>
               <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(quote.status)}`}>
                 {getStatusText(quote.status)}
               </span>
@@ -103,6 +88,7 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
               </div>
             )}
           </div>
+
           <div className="flex items-center space-x-2">
             {onToggleCompare && (
               <button
@@ -137,81 +123,86 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-          {/* Araç Bilgileri */}
+          {/* Araç */}
           <div className="flex items-center space-x-3">
             <Car className="h-5 w-5 text-blue-600 flex-shrink-0" />
             <div>
               <p className="text-sm font-medium text-gray-900">
-                {quote.vehicle.brand} {quote.vehicle.model}
+                {quote.vehicle?.brand ?? '-'} {quote.vehicle?.model ?? ''}
               </p>
               <p className="text-xs text-gray-500">
-                {quote.vehicle.plateNumber} • {quote.vehicle.year}
+                {quote.vehicle?.plateNumber ?? '-'} • {quote.vehicle?.year ?? '-'}
               </p>
             </div>
           </div>
 
-          {/* Sürücü Bilgileri */}
+          {/* Sürücü */}
           <div className="flex items-center space-x-3">
             <User className="h-5 w-5 text-blue-600 flex-shrink-0" />
             <div>
               <p className="text-sm font-medium text-gray-900">
-                {quote.driver.firstName} {quote.driver.lastName}
+                {(quote.driver?.firstName ?? '-')} {(quote.driver?.lastName ?? '')}
               </p>
-              <p className="text-xs text-gray-500">
-                {quote.driver.profession}
-              </p>
+              <p className="text-xs text-gray-500">{quote.driver?.profession ?? ''}</p>
             </div>
           </div>
 
-          {/* Prim Bilgileri */}
+          {/* Prim */}
           <div className="flex items-center space-x-3">
             <DollarSign className="h-5 w-5 text-green-600 flex-shrink-0" />
             <div>
               <p className="text-sm font-medium text-gray-900">
-                ₺{quote.finalPremium.toLocaleString('tr-TR')}
+                ₺{(quote.finalPremium ?? quote.premium)?.toLocaleString?.('tr-TR') ?? '-'}
               </p>
-              {quote.totalDiscount > 0 && (
+              {(quote.totalDiscount ?? 0) > 0 && (
                 <p className="text-xs text-green-600">
-                  ₺{quote.totalDiscount.toLocaleString('tr-TR')} indirim
+                  ₺{(quote.totalDiscount ?? 0).toLocaleString('tr-TR')} indirim
                 </p>
               )}
             </div>
           </div>
 
-          {/* Tarih Bilgileri */}
+          {/* Tarih */}
           <div className="flex items-center space-x-3">
             <Calendar className="h-5 w-5 text-purple-600 flex-shrink-0" />
             <div>
               <p className="text-sm font-medium text-gray-900">
-                {new Date(quote.createdAt).toLocaleDateString('tr-TR')}
+                {quote.createdAt ? new Date(quote.createdAt).toLocaleDateString('tr-TR') : '-'}
               </p>
               <p className="text-xs text-gray-500">
-                Geçerli: {new Date(quote.validUntil).toLocaleDateString('tr-TR')}
+                Geçerli: {quote.validUntil ? new Date(quote.validUntil).toLocaleDateString('tr-TR') : '-'}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Alt Bilgiler */}
+        {/* Alt Bilgi */}
         <div className="flex items-center justify-between text-sm text-gray-600">
           <div className="flex items-center space-x-4">
-            <span>Sigorta Şirketi: <span className="font-medium">{quote.companyName}</span></span>
-            <span>Risk Skoru: <span className="font-medium">{quote.riskScore}/100</span></span>
-            <span>Teminat: <span className="font-medium">₺{quote.coverageAmount.toLocaleString('tr-TR')}</span></span>
+            <span>
+              Sigorta Şirketi: <span className="font-medium">{quote.companyName ?? '-'}</span>
+            </span>
+            <span>
+              Risk Skoru: <span className="font-medium">{quote.riskScore ?? '-'} /100</span>
+            </span>
+            <span>
+              Teminat:{' '}
+              <span className="font-medium">₺{(quote.coverageAmount ?? 0).toLocaleString('tr-TR')}</span>
+            </span>
           </div>
         </div>
 
         {/* İndirimler */}
-        {quote.discounts.length > 0 && (
+        {(quote.discounts?.length ?? 0) > 0 && (
           <div className="mt-3 pt-3 border-t border-gray-100">
             <p className="text-sm text-gray-600 mb-1">Uygulanan İndirimler:</p>
             <div className="flex flex-wrap gap-2">
-              {quote.discounts.map((discount, index) => (
+              {quote.discounts!.map((d, i) => (
                 <span
-                  key={index}
+                  key={i}
                   className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700"
                 >
-                  {discount.name} (%{discount.percentage})
+                  {d.name} (%{d.percentage})
                 </span>
               ))}
             </div>

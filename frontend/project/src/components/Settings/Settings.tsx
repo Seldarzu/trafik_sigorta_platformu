@@ -1,10 +1,7 @@
-import React, { useState } from 'react';
-import { 
-  Settings as SettingsIcon, User, Bell, Shield, Globe, 
-  Palette, Save, Camera, Mail, Phone, MapPin, Calendar,
-  Clock, DollarSign, Languages, Moon, Sun, Monitor,
-  Lock, Key, Database, Download, Upload, Trash2,
-  CheckCircle, AlertCircle, Info, X
+// src/components/settings/Settings.tsx
+import React, { useEffect, useState } from 'react';
+import {
+  Settings as SettingsIcon, User, Bell, Shield, Save, CheckCircle, X
 } from 'lucide-react';
 import { UserProfile, NotificationSettings, SystemSettings } from '../../types';
 import ProfileSettings from './ProfileSettings';
@@ -12,24 +9,44 @@ import NotificationSettingsComponent from './NotificationSettings';
 import SystemSettingsComponent from './SystemSettings';
 import SecuritySettings from './SecuritySettings';
 
-const Settings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('profile');
-  const [showSaveNotification, setShowSaveNotification] = useState(false);
+import { SystemSettingsService } from '../../services/SystemSettingsService';
+import { NotificationSettingsService } from '../../services/NotificationSettingsService';
 
-  // Mock user data
+const DEMO_USER_ID =
+  import.meta.env.VITE_DEMO_USER_ID ??
+  '00000000-0000-0000-0000-000000000001';
+
+const Settings: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'profile'|'notifications'|'system'|'security'>('profile');
+  const [showSaveNotification, setShowSaveNotification] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+
+  // UI tercihleri (frontend-only) – SystemSettingsComponent bunu kullanıyor
+  const [systemUiSettings, setSystemUiSettings] = useState<SystemSettings>({
+    language: 'tr',
+    timezone: 'Europe/Istanbul',
+    currency: 'TRY',
+    dateFormat: 'DD/MM/YYYY',
+    theme: 'light',
+    autoSave: true,
+    sessionTimeout: 30
+  });
+
+  // Backend System Settings (acente bilgilerinin kaynağı)
   const [userProfile, setUserProfile] = useState<UserProfile>({
-    id: 'user-1',
+    id: DEMO_USER_ID,
     firstName: 'Ahmet',
     lastName: 'Yılmaz',
     email: 'ahmet.yilmaz@sigortapro.com',
     phone: '+90 532 123 4567',
     role: 'agent',
-    agencyName: 'SigortaTeklif Pro',
-    agencyCode: 'STP001',
-    licenseNumber: 'SIG-2024-001',
+    agencyName: '',
+    agencyCode: '',
+    licenseNumber: '',
     joinDate: '2023-01-15',
-    lastLogin: '2024-01-16T10:30:00Z',
-    isActive: true
+    lastLogin: new Date().toISOString(),
+    isActive: true,
   });
 
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
@@ -45,72 +62,82 @@ const Settings: React.FC = () => {
     monthlyReports: true
   });
 
-  const [systemSettings, setSystemSettings] = useState<SystemSettings>({
-    language: 'tr',
-    timezone: 'Europe/Istanbul',
-    currency: 'TRY',
-    dateFormat: 'DD/MM/YYYY',
-    theme: 'light',
-    autoSave: true,
-    sessionTimeout: 30
-  });
+  // ilk yükleme
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true); setErr(null);
+      try {
+        // 1) System settings çek
+        const sys = await SystemSettingsService.get();
+        setUserProfile((prev) => ({
+          ...prev,
+          agencyName: sys.agencyName ?? '',
+          agencyCode: sys.agencyCode ?? '',
+          licenseNumber: sys.licenseNumber ?? '',
+          joinDate: sys.joinDate ?? prev.joinDate,
+          lastLogin: (sys.lastLogin ?? prev.lastLogin),
+          isActive: sys.isActive ?? true,
+        }));
+
+        // 2) Notification settings çek
+        try {
+          const notif = await NotificationSettingsService.get(DEMO_USER_ID);
+          setNotificationSettings(notif);
+        } catch (e) {
+          // kullanıcı yoksa backend default üretiyorsa burası opsiyonel
+          console.warn('Notification settings GET failed (dev?):', e);
+        }
+      } catch (e:any) {
+        console.error(e);
+        setErr('Ayarlar yüklenemedi.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const handleSave = async () => {
+    setErr(null);
+    try {
+      // System settings PUT
+      await SystemSettingsService.update({
+        agencyName: userProfile.agencyName ?? null,
+        agencyCode: userProfile.agencyCode ?? null,
+        licenseNumber: userProfile.licenseNumber ?? null,
+        // joinDate/lastLogin backend LocalDate bekliyorsa 'YYYY-MM-DD' gönderin
+        joinDate: userProfile.joinDate ? userProfile.joinDate.substring(0, 10) : null,
+        lastLogin: userProfile.lastLogin ? userProfile.lastLogin.substring(0, 10) : null,
+        isActive: userProfile.isActive,
+      });
+
+      // Notification settings PUT
+      await NotificationSettingsService.update(DEMO_USER_ID, notificationSettings);
+
+      setShowSaveNotification(true);
+      setTimeout(() => setShowSaveNotification(false), 3000);
+    } catch (e:any) {
+      console.error(e);
+      setErr('Kaydetme sırasında hata oluştu.');
+    }
+  };
 
   const tabs = [
-    {
-      id: 'profile',
-      label: 'Profil',
-      icon: User,
-      color: 'from-blue-500 to-cyan-500'
-    },
-    {
-      id: 'notifications',
-      label: 'Bildirimler',
-      icon: Bell,
-      color: 'from-purple-500 to-pink-500'
-    },
-    {
-      id: 'system',
-      label: 'Sistem',
-      icon: SettingsIcon,
-      color: 'from-green-500 to-emerald-500'
-    },
-    {
-      id: 'security',
-      label: 'Güvenlik',
-      icon: Shield,
-      color: 'from-orange-500 to-red-500'
-    }
-  ];
-
-  const handleSave = () => {
-    // Simulate save operation
-    setShowSaveNotification(true);
-    setTimeout(() => setShowSaveNotification(false), 3000);
-  };
+    { id: 'profile', label: 'Profil', icon: User, color: 'from-blue-500 to-cyan-500' },
+    { id: 'notifications', label: 'Bildirimler', icon: Bell, color: 'from-purple-500 to-pink-500' },
+    { id: 'system', label: 'Sistem', icon: SettingsIcon, color: 'from-green-500 to-emerald-500' },
+    { id: 'security', label: 'Güvenlik', icon: Shield, color: 'from-orange-500 to-red-500' },
+  ] as const;
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'profile':
-        return (
-          <ProfileSettings
-            profile={userProfile}
-            onUpdate={setUserProfile}
-          />
-        );
+        return <ProfileSettings profile={userProfile} onUpdate={setUserProfile} />;
       case 'notifications':
-        return (
-          <NotificationSettingsComponent
-            settings={notificationSettings}
-            onUpdate={setNotificationSettings}
-          />
-        );
+        return <NotificationSettingsComponent settings={notificationSettings} onUpdate={setNotificationSettings} />;
       case 'system':
-        return (
-          <SystemSettingsComponent
-            settings={systemSettings}
-            onUpdate={setSystemSettings}
-          />
-        );
+        // Bu component UI tercihleri için; backend’e yazmıyoruz (istersen ek bir endpoint’e bağlarız)
+        return <SystemSettingsComponent settings={systemUiSettings} onUpdate={setSystemUiSettings} />;
       case 'security':
         return <SecuritySettings />;
       default:
@@ -121,6 +148,7 @@ const Settings: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mb-4">
@@ -132,15 +160,24 @@ const Settings: React.FC = () => {
           <p className="mt-2 text-lg text-gray-600">Hesap ve sistem ayarlarınızı yönetin</p>
         </div>
 
+        {/* Hata/Loading */}
+        {err && (
+          <div className="mb-6 mx-auto max-w-3xl bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-center">
+            {err}
+          </div>
+        )}
+        {loading && (
+          <div className="mb-6 mx-auto max-w-3xl bg-blue-50 border border-blue-200 text-blue-700 p-3 rounded-lg text-center">
+            Yükleniyor...
+          </div>
+        )}
+
         {/* Save Notification */}
         {showSaveNotification && (
-          <div className="fixed top-4 right-4 z-50 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2 animate-slide-in">
+          <div className="fixed top-4 right-4 z-50 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
             <CheckCircle className="h-5 w-5" />
             <span>Ayarlar başarıyla kaydedildi!</span>
-            <button
-              onClick={() => setShowSaveNotification(false)}
-              className="ml-2 hover:bg-white/20 rounded-full p-1"
-            >
+            <button onClick={() => setShowSaveNotification(false)} className="ml-2 hover:bg-white/20 rounded-full p-1">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -155,12 +192,13 @@ const Settings: React.FC = () => {
                 <nav className="space-y-2">
                   {tabs.map((tab) => {
                     const Icon = tab.icon;
+                    const id = tab.id;
                     return (
                       <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
+                        key={id}
+                        onClick={() => setActiveTab(id)}
                         className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200 ${
-                          activeTab === tab.id
+                          activeTab === id
                             ? `bg-gradient-to-r ${tab.color} text-white shadow-lg transform scale-105`
                             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                         }`}
@@ -192,8 +230,8 @@ const Settings: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Durum</span>
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
-                    Aktif
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${userProfile.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {userProfile.isActive ? 'Aktif' : 'Pasif'}
                   </span>
                 </div>
               </div>
@@ -203,15 +241,12 @@ const Settings: React.FC = () => {
           {/* Main Content */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-xl shadow-lg">
-              <div className="p-8">
-                {renderTabContent()}
-              </div>
-              
-              {/* Save Button */}
+              <div className="p-8">{renderTabContent()}</div>
               <div className="px-8 py-6 bg-gray-50 border-t border-gray-200 flex justify-end">
                 <button
                   onClick={handleSave}
-                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                  disabled={loading}
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-60"
                 >
                   <Save className="h-5 w-5 mr-2" />
                   Değişiklikleri Kaydet
@@ -219,6 +254,7 @@ const Settings: React.FC = () => {
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>

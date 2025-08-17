@@ -5,24 +5,21 @@ import com.trafik.teklif_api.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+import java.util.UUID;
 
-
-@RestController
-@RequiredArgsConstructor
+@RestController @RequiredArgsConstructor
 @RequestMapping("/api/users")
 public class UserController {
     private final UserService service;
 
     @GetMapping("/{id}")
-    public UserProfileResponse get(@PathVariable("id") Long id) {
+    public UserProfileResponse get(@PathVariable("id") UUID id) {
         return service.getProfile(id);
     }
 
     @PutMapping("/{id}")
-    public UserProfileResponse update(
-      @PathVariable("id") Long id,
-      @Valid @RequestBody UserProfileUpdateRequest req
-    ) {
+    public UserProfileResponse update(@PathVariable("id") UUID id,
+                                      @Valid @RequestBody UserProfileUpdateRequest req) {
         return service.updateProfile(id, req);
     }
 }
