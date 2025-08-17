@@ -17,9 +17,7 @@ const RISK_I18N: Record<'low'|'medium'|'high', {label:string;color:string}> = {
 const MONTHS_TR = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
 
 function synthesizeMonthly(
-  period: Period,
   totalRevenue = 0,
-  totalPolicies = 0,
   avgPremium = 0
 ) {
   // 12 aylık yuvarlanan seri
@@ -137,9 +135,7 @@ const Analytics: React.FC = () => {
 
       if (isEmpty) {
         monthlyData = synthesizeMonthly(
-          period,
           s?.totalRevenue ?? 0,
-          s?.totalPolicies ?? 0,
           s?.averagePremium ?? 0
         );
       } else {
@@ -148,7 +144,10 @@ const Analytics: React.FC = () => {
           month: x.month ?? MONTHS_TR[idx % 12],
           revenue: Number(x.revenue ?? 0),
           policies: Number(x.policies ?? 0),
-          quotes: Number(x.quotes ?? Math.max(Number(x.policies ?? 0), Math.round(Number(x.policies ?? 0) * 1.3))),
+          quotes: Number(
+            x.quotes ??
+            Math.max(Number(x.policies ?? 0), Math.round(Number(x.policies ?? 0) * 1.3))
+          ),
         }));
       }
       setMonthly(monthlyData);
@@ -168,7 +167,12 @@ const Analytics: React.FC = () => {
       console.error(e);
       setErr('Analitik veriler yüklenemedi.');
       // hata halinde bile trend boş kalmasın
-      setMonthly(synthesizeMonthly(selectedPeriod));
+      setMonthly(
+        synthesizeMonthly(
+          summary?.totalRevenue ?? 0,
+          summary?.averagePremium ?? 0
+        )
+      );
     } finally {
       setLoading(false);
     }

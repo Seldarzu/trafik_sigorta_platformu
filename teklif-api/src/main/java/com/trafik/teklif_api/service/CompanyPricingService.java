@@ -41,10 +41,11 @@ public class CompanyPricingService {
 
         // 3) Fiyatla
         return companies.stream()
-                .map(c -> priceForCompany(
-                        c, base, q, v, d,
-                        strategies.getOrDefault(safe(c.getCode()), strategies.get("DEFAULT"))
-                ))
+                .map(c -> {
+                    String key = resolveStrategyKey(c); // code yoksa/uyuşmazsa isim/id’den “sepet”
+                    CompanyStrategy s = strategies.getOrDefault(key, strategies.get("DEFAULT"));
+                    return priceForCompany(c, base, q, v, d, s);
+                })
                 .sorted(Comparator.comparing(CompanyQuoteDto::finalPremium))
                 .collect(Collectors.toList());
     }
@@ -77,6 +78,10 @@ public class CompanyPricingService {
             Driver d,
             CompanyStrategy s
     ) {
+        // deterministik ufak jitter (şirket bazlı) → tekdüzelik kırılır, ama aynı şirkette stabil kalır
+        double premiumJitter  = 1.0 + (((Math.abs(Objects.hash(safe(c.getId()), safe(c.getName()))) % 7) - 3) * 0.01); // ±3%
+        double coverageJitter = 1.0 + (((Math.abs(Objects.hash(safe(c.getName()))) % 9) - 4) * 0.02);                // ±8%
+
         // Prim
         BigDecimal premium = base
                 .multiply(s.companyFactor)
@@ -84,16 +89,24 @@ public class CompanyPricingService {
                 .multiply(vehicleAgeFactor(v))
                 .multiply(usageFuelFactor(v))
                 .multiply(driverHistoryFactor(d))
+                .multiply(bd(premiumJitter))
                 .setScale(0, RoundingMode.HALF_UP);
 
         BigDecimal discount = premium.multiply(s.discountRate);
-        if (s.maxDiscount != null) {
-            discount = discount.min(s.maxDiscount);
-        }
+        if (s.maxDiscount != null) discount = discount.min(s.maxDiscount);
         BigDecimal finalPremium = premium.subtract(discount).max(BigDecimal.ZERO);
 
         // Kişi başı teminat (dinamik)
-        BigDecimal coverage = coverageForCompany(q, v, s);
+        BigDecimal coverage = coverageForCompany(q, v, s)
+                .multiply(bd(coverageJitter));
+
+        // 10.000 TL adımına yuvarla ve sınırla (min’i 300k tutarak 100k’ya düşmeyi engelledik)
+        coverage = stepRound(coverage, bd(10_000));
+        BigDecimal min = bd(300_000);
+        BigDecimal max = bd(1_500_000);
+        if (coverage.compareTo(min) < 0) coverage = min;
+        if (coverage.compareTo(max) > 0) coverage = max;
+        coverage = coverage.setScale(0, RoundingMode.HALF_UP);
 
         return new CompanyQuoteDto(
                 c.getId(),
@@ -141,7 +154,6 @@ public class CompanyPricingService {
         BigDecimal f = bd(1.00);
         if (v == null) return f;
 
-        // UsageType (enum) — kolon adı usage_type, entity alanı usage
         UsageType usage = v.getUsage();
         if (usage != null) {
             switch (usage) {
@@ -150,7 +162,6 @@ public class CompanyPricingService {
             }
         }
 
-        // FuelType (enum)
         FuelType fuel = v.getFuelType();
         if (fuel != null) {
             switch (fuel) {
@@ -183,37 +194,24 @@ public class CompanyPricingService {
     /** Şirketlere göre prim/indirim/teminat tabanı + teminat çarpanı. */
     private Map<String, CompanyStrategy> defaultStrategies() {
         Map<String, CompanyStrategy> m = new HashMap<>();
-        //                 factor  disc    maxDisc  covBase   covMult
-        m.put("ECO",     new CompanyStrategy(bd(0.95), bd(0.08), bd(400),  bd(600_000),  bd(0.90)));
-        m.put("DNG",     new CompanyStrategy(bd(1.00), bd(0.05), bd(300),  bd(700_000),  bd(1.00)));
-        m.put("PRF",     new CompanyStrategy(bd(1.05), bd(0.04), bd(300),  bd(800_000),  bd(1.10)));
-        m.put("PRM",     new CompanyStrategy(bd(1.12), bd(0.06), bd(500),  bd(1_000_000),bd(1.25)));
-        m.put("DEFAULT", new CompanyStrategy(bd(1.00), bd(0.00), null,      bd(600_000),  bd(1.00)));
+        //                  factor   disc   maxDisc  covBase       covMult
+        m.put("ECO",     new CompanyStrategy(bd(0.88), bd(0.10), bd(600),   bd(350_000),    bd(0.95)));
+        m.put("DNG",     new CompanyStrategy(bd(1.00), bd(0.05), bd(400),   bd(500_000),    bd(1.00)));
+        m.put("PRF",     new CompanyStrategy(bd(1.08), bd(0.04), bd(400),   bd(800_000),    bd(1.08)));
+        m.put("PRM",     new CompanyStrategy(bd(1.18), bd(0.06), bd(800),   bd(1_200_000),  bd(1.18)));
+        m.put("DEFAULT", new CompanyStrategy(bd(1.00), bd(0.00), null,      bd(500_000),    bd(1.00)));
         return m;
     }
 
     /* ---------- Teminat Hesabı ---------- */
 
-    /** Kişi başı bedeni teminatı: şirket stratejisi + risk + kullanım etkileri. */
     private BigDecimal coverageForCompany(Quote q, Vehicle v, CompanyStrategy s) {
-        BigDecimal cov = s.coverageBase
+        return s.coverageBase
                 .multiply(s.coverageMultiplier)
                 .multiply(coverageRiskFactor(q))
                 .multiply(coverageVehicleFactor(v));
-
-        // 10.000 TL adımına yuvarla
-        cov = stepRound(cov, bd(10_000));
-
-        // Min / Max sınırla (örn. 400k–1.5M)
-        BigDecimal min = bd(400_000);
-        BigDecimal max = bd(1_500_000);
-        if (cov.compareTo(min) < 0) cov = min;
-        if (cov.compareTo(max) > 0) cov = max;
-
-        return cov.setScale(0, RoundingMode.HALF_UP);
     }
 
-    /** Risk seviyesine göre teminat çarpanı. */
     private BigDecimal coverageRiskFactor(Quote q) {
         String level = String.valueOf(q.getRiskLevel()).toLowerCase(Locale.ROOT);
         return switch (level) {
@@ -223,7 +221,6 @@ public class CompanyPricingService {
         };
     }
 
-    /** Kullanım & yakıt tipine göre teminat çarpanı. */
     private BigDecimal coverageVehicleFactor(Vehicle v) {
         if (v == null) return bd(1.00);
         BigDecimal f = bd(1.00);
@@ -231,9 +228,9 @@ public class CompanyPricingService {
         UsageType usage = v.getUsage();
         if (usage != null) {
             switch (usage) {
-                case COMMERCIAL -> f = f.multiply(bd(0.95)); // ticari kullanımda biraz düş
+                case COMMERCIAL -> f = f.multiply(bd(0.95));
                 case TAXI       -> f = f.multiply(bd(0.90));
-                default -> { /* PERSONAL vs. */ }
+                default -> { }
             }
         }
 
@@ -243,6 +240,27 @@ public class CompanyPricingService {
         }
 
         return f;
+    }
+
+    /* ---------- Strateji anahtarını çöz ---------- */
+
+    private String resolveStrategyKey(InsuranceCompany c) {
+        // 1) code varsa doğrudan kullan
+        String code = safe(c.getCode());
+        if (!code.isBlank()) {
+            if (code.startsWith("ECO")) return "ECO";
+            if (code.startsWith("PRM")) return "PRM";
+            if (code.startsWith("PRF")) return "PRF";
+            if (code.startsWith("DNG")) return "DNG";
+        }
+        // 2) isim/id ile deterministik “sepet”e dağıt
+        int bucket = Math.abs(Objects.hash(safe(c.getName()), safe(c.getId()))) % 4;
+        return switch (bucket) {
+            case 0 -> "ECO";
+            case 1 -> "DNG";
+            case 2 -> "PRF";
+            default -> "PRM";
+        };
     }
 
     private static BigDecimal stepRound(BigDecimal value, BigDecimal step) {
@@ -260,10 +278,11 @@ public class CompanyPricingService {
         if (n == null) return bd(0);
         return bd(n.doubleValue());
     }
-
     private static BigDecimal bd(double v) { return BigDecimal.valueOf(v); }
     private static BigDecimal bd(long v)   { return BigDecimal.valueOf(v); }
 
+    // OVERLOAD: UUID kabul eden safe
+    private static String safe(UUID u) { return u == null ? "" : u.toString().toUpperCase(Locale.ROOT); }
     private static String safe(String s) { return s == null ? "" : s.trim().toUpperCase(Locale.ROOT); }
 
     private record CompanyStrategy(

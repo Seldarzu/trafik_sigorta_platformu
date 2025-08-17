@@ -1,5 +1,5 @@
-import React from 'react';
-import { Shield, CheckCircle, X, Info } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Shield, CheckCircle, X } from 'lucide-react';
 import { Quote, InsuranceCompany } from '../../types';
 
 interface CoverageComparisonProps {
@@ -17,22 +17,43 @@ const CoverageComparison: React.FC<CoverageComparisonProps> = ({ quotes }) => {
     { key: 'roadAssistance',            label: 'Yol Yardımı',              description: '7/24 yol yardım hizmeti', unit: '', type: 'boolean' },
     { key: 'replacementVehicle',        label: 'Yedek Araç',               description: 'Hasar durumunda yedek araç hizmeti', unit: '', type: 'boolean' },
     { key: 'personalAccident',          label: 'Ferdi Kaza Teminatı',      description: 'Sürücü için ferdi kaza teminatı', unit: '₺', type: 'amount' },
-  ];
+  ] as const;
 
-  const getBestValue = (key: string, type: string) => {
-    if (!quotes.length) return 0;
-    if (type === 'amount') {
-      return Math.max(...quotes.map(q => (q.coverageDetails as any)?.[key] || 0));
-    }
-    return quotes.some(q => (q.coverageDetails as any)?.[key]);
-  };
+  /**
+   * Her satır (coverageItems key’i) için “tek bir kazanan” seç:
+   * - type === 'amount' → max değere sahip ilk şirket (max>0 ise)
+   * - type === 'boolean' → true olan ilk şirket
+   * Hiç uygun yoksa null.
+   */
+  const bestCellByKey = useMemo(() => {
+    const map: Record<string, string | null> = {};
+    coverageItems.forEach(item => {
+      let winnerId: string | null = null;
 
-  const isBestValue = (quote: Quote, key: string, type: string) => {
-    const value = (quote.coverageDetails as any)?.[key];
-    const bestValue = getBestValue(key, type);
-    if (type === 'amount') return value === bestValue && value > 0;
-    return value === true && bestValue === true;
-  };
+      if (item.type === 'amount') {
+        let maxVal = -Infinity;
+        quotes.forEach(q => {
+          const val = Number((q.coverageDetails as any)?.[item.key] ?? 0);
+          if (val > maxVal) {
+            maxVal = val;
+            winnerId = q.id;
+          }
+        });
+        // hepsi 0 veya negatifse rozet yok
+        if (!(maxVal > 0)) winnerId = null;
+      } else {
+        // boolean: true olan ilk şirket
+        winnerId = null;
+        for (const q of quotes) {
+          const val = Boolean((q.coverageDetails as any)?.[item.key]);
+          if (val) { winnerId = q.id; break; }
+        }
+      }
+
+      map[item.key] = winnerId;
+    });
+    return map;
+  }, [quotes]);
 
   return (
     <div className="space-y-6">
@@ -70,21 +91,34 @@ const CoverageComparison: React.FC<CoverageComparisonProps> = ({ quotes }) => {
                     </div>
                   </div>
                 </td>
+
                 {quotes.map((quote) => {
                   const value = (quote.coverageDetails as any)?.[item.key];
-                  const isHighlighted = isBestValue(quote, item.key, item.type);
+                  const isWinner = bestCellByKey[item.key] === quote.id;
+
                   return (
                     <td key={quote.id} className="px-6 py-4 text-center">
-                      <div className={`inline-flex items-center justify-center px-3 py-2 rounded-lg ${
-                        isHighlighted ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold' : 'bg-gray-100 text-gray-700'
-                      }`}>
+                      <div
+                        className={`inline-flex items-center justify-center px-3 py-2 rounded-lg ${
+                          isWinner
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
                         {item.type === 'boolean' ? (
-                          value ? <CheckCircle className="h-5 w-5 text-current" /> : <X className="h-5 w-5 text-current" />
+                          value ? (
+                            <CheckCircle className="h-5 w-5 text-current" />
+                          ) : (
+                            <X className="h-5 w-5 text-current" />
+                          )
                         ) : (
-                          <span>{value > 0 ? `${item.unit}${value.toLocaleString('tr-TR')}` : 'Yok'}</span>
+                          <span>
+                            {Number(value) > 0 ? `${item.unit}${Number(value).toLocaleString('tr-TR')}` : 'Yok'}
+                          </span>
                         )}
                       </div>
-                      {isHighlighted && <div className="text-xs text-green-600 font-medium mt-1">En İyi</div>}
+
+                      {isWinner && <div className="text-xs text-green-600 font-medium mt-1">En İyi</div>}
                     </td>
                   );
                 })}
@@ -92,48 +126,6 @@ const CoverageComparison: React.FC<CoverageComparisonProps> = ({ quotes }) => {
             ))}
           </tbody>
         </table>
-      </div>
-
-      {/* Coverage Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
-          <div className="flex items-center mb-4">
-            <CheckCircle className="h-6 w-6 text-green-500 mr-2" />
-            <h3 className="text-lg font-bold text-gray-900">Temel Teminatlar</h3>
-          </div>
-          <ul className="space-y-2 text-sm text-gray-700">
-            <li>• Zorunlu Mali Sorumluluk</li>
-            <li>• Bedeni ve Maddi Zarar</li>
-            <li>• İMM Teminatı</li>
-            <li>• Ferdi Kaza (Opsiyonel)</li>
-          </ul>
-        </div>
-
-        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-6 rounded-xl border border-blue-200">
-          <div className="flex items-center mb-4">
-            <Shield className="h-6 w-6 text-blue-500 mr-2" />
-            <h3 className="text-lg font-bold text-gray-900">Ek Hizmetler</h3>
-          </div>
-          <ul className="space-y-2 text-sm text-gray-700">
-            <li>• 7/24 Yol Yardımı</li>
-            <li>• Hukuki Koruma</li>
-            <li>• Yedek Araç Hizmeti</li>
-            <li>• Ekspertiz Hizmeti</li>
-          </ul>
-        </div>
-
-        <div className="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-xl border border-orange-200">
-          <div className="flex items-center mb-4">
-            <Info className="h-6 w-6 text-orange-500 mr-2" />
-            <h3 className="text-lg font-bold text-gray-900">Önemli Notlar</h3>
-          </div>
-          <ul className="space-y-2 text-sm text-gray-700">
-            <li>• Teminat tutarları minimum değerlerdir</li>
-            <li>• Ek teminatlar için ek prim alınabilir</li>
-            <li>• Detaylar için poliçe şartlarını inceleyin</li>
-            <li>• Hasar durumunda muafiyet uygulanabilir</li>
-          </ul>
-        </div>
       </div>
     </div>
   );

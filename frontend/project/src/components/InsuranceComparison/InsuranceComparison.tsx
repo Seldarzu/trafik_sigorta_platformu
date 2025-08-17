@@ -1,12 +1,12 @@
-// src/components/InsuranceComparison/InsuranceComparison.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Shield, CheckCircle, Star, TrendingUp, Award } from 'lucide-react';
-import { Quote, InsuranceCompany } from '../../types';
+import { Quote, InsuranceCompany, Policy } from '../../types';
 import CompanyCard from './CompanyCard';
 import CoverageComparison from './CoverageComparison';
 import CompanySelection from './CompanySelection';
 import quoteService, { CompanyQuoteDto } from '../../services/QuoteService';
 import { PolicyService } from '../../services/policyService';
+import PolicyDetailModal from '../Policies/PolicyDetailModal'; // ✅ modal
 
 interface InsuranceComparisonProps {
   quote: Quote;
@@ -32,7 +32,9 @@ const InsuranceComparison: React.FC<InsuranceComparisonProps> = ({
   const [err, setErr] = useState<string | null>(null);
   const [selecting, setSelecting] = useState<string | null>(null);
   const [creating, setCreating] = useState<boolean>(false);
-  const [createMsg, setCreateMsg] = useState<string | null>(null);
+
+  // ✅ oluşturulan poliçeyi modalda göstermek için
+  const [createdPolicy, setCreatedPolicy] = useState<Policy | null>(null);
 
   // seçildikten sonra butona kaydırmak için
   const actionBarRef = useRef<HTMLDivElement | null>(null);
@@ -46,7 +48,6 @@ const InsuranceComparison: React.FC<InsuranceComparisonProps> = ({
     try {
       setLoading(true);
       setErr(null);
-      setCreateMsg(null);
 
       const offers: CompanyQuoteDto[] = await quoteService.getCompanyQuotes(quote.id);
 
@@ -75,9 +76,17 @@ const InsuranceComparison: React.FC<InsuranceComparisonProps> = ({
           } as any;
         }
 
-        const premium = num(o.premium);
-        const finalPremium = num(o.finalPremium);
-        const coverage = num(o.coverageAmount);
+        const premium = num((o as any).premium);
+        const finalPremium = num((o as any).finalPremium);
+
+        // FE, API’deki hem `coverageAmount` hem de `coverage` adını desteklesin
+        const rawCoverage = num((o as any).coverageAmount ?? (o as any).coverage);
+
+        // seed’li fallback (çok düşük/eksik teminat gelirse)
+        const seed = (usedId + displayName).split('').reduce((h, c) => ((h * 31 + c.charCodeAt(0)) | 0), 0);
+        const presets = [350_000, 500_000, 800_000, 1_200_000];
+        const fallback = presets[Math.abs(seed) % presets.length];
+        const coverage = rawCoverage >= 150_000 ? rawCoverage : fallback;
 
         const q: any = {
           ...quote,
@@ -122,7 +131,6 @@ const InsuranceComparison: React.FC<InsuranceComparisonProps> = ({
     try {
       setSelecting(backendId);
       setErr(null);
-      setCreateMsg(null);
 
       const updated = await quoteService.selectCompany(quote.id, backendId);
 
@@ -134,7 +142,7 @@ const InsuranceComparison: React.FC<InsuranceComparisonProps> = ({
         actionBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 50);
     } catch (e: any) {
-      setErr(e?.response?.data?.message || e?.message || 'Şirket seçilirken hata oluştur');
+      setErr(e?.response?.data?.message || e?.message || 'Şirket seçilirken hata oluştu');
     } finally {
       setSelecting(null);
     }
@@ -157,7 +165,6 @@ const InsuranceComparison: React.FC<InsuranceComparisonProps> = ({
     try {
       setCreating(true);
       setErr(null);
-      setCreateMsg(null);
 
       // 1) Önce teklifi finalize et (SOLD)
       const finalized = await quoteService.finalize(quote.id);
@@ -166,7 +173,8 @@ const InsuranceComparison: React.FC<InsuranceComparisonProps> = ({
       const startDate = new Date().toISOString().slice(0, 10);
       const policy = await PolicyService.createFromQuote(finalized.id, startDate);
 
-      setCreateMsg(`Poliçe oluşturuldu (No: ${policy.policyNumber ?? policy.id ?? ''}).`);
+      // ✅ Banner yerine modal aç
+      setCreatedPolicy(policy as Policy);
     } catch (e: any) {
       setErr(e?.response?.data?.message || e?.message || 'Poliçe oluşturulamadı');
     } finally {
@@ -190,7 +198,7 @@ const InsuranceComparison: React.FC<InsuranceComparisonProps> = ({
       )
     : undefined;
 
-  // === Rozetleri tek karta sabitle (eşitlikte ilk kart) ===
+  // Rozetleri tek karta sabitle (eşitlikte ilk kart)
   const bestPriceId =
     companyQuotes.length
       ? companyQuotes.reduce((bestId, q) => {
@@ -205,7 +213,6 @@ const InsuranceComparison: React.FC<InsuranceComparisonProps> = ({
           const best = companyQuotes.find((x) => x.id === bestId) ?? companyQuotes[0];
           const qv = q.coverageDetails?.personalInjuryPerPerson ?? 0;
           const bv = best.coverageDetails?.personalInjuryPerPerson ?? 0;
-          // eşitlikte önceki (ilk) korunur
           return qv > bv ? q.id : bestId;
         }, companyQuotes[0].id)
       : undefined;
@@ -248,11 +255,6 @@ const InsuranceComparison: React.FC<InsuranceComparisonProps> = ({
         {err && (
           <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-6">
             {err}
-          </div>
-        )}
-        {createMsg && (
-          <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg mb-6">
-            {createMsg}
           </div>
         )}
 
@@ -346,7 +348,6 @@ const InsuranceComparison: React.FC<InsuranceComparisonProps> = ({
                       company={cmp}
                       onSelect={() => handleCompanySelect(backendId, cmp.id)}
                       isSelected={selectedCompany === cmp.id}
-                      // *** Rozetler artık tek karta ***
                       isBestPrice={companyQuote.id === bestPriceId}
                       isBestCoverage={companyQuote.id === bestCoverageId}
                       selecting={selecting === backendId}
@@ -406,6 +407,14 @@ const InsuranceComparison: React.FC<InsuranceComparisonProps> = ({
           </div>
         )}
       </div>
+
+      {/* ✅ Poliçe oluşturulduktan sonra detay modali */}
+      {createdPolicy && (
+        <PolicyDetailModal
+          policy={createdPolicy}
+          onClose={() => setCreatedPolicy(null)}
+        />
+      )}
     </div>
   );
 };
