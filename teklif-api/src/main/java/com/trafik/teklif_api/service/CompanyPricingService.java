@@ -77,6 +77,7 @@ public class CompanyPricingService {
             Driver d,
             CompanyStrategy s
     ) {
+        // Prim
         BigDecimal premium = base
                 .multiply(s.companyFactor)
                 .multiply(riskFactor(q))
@@ -91,7 +92,8 @@ public class CompanyPricingService {
         }
         BigDecimal finalPremium = premium.subtract(discount).max(BigDecimal.ZERO);
 
-        BigDecimal coverage = s.coverageBase;
+        // Kişi başı teminat (dinamik)
+        BigDecimal coverage = coverageForCompany(q, v, s);
 
         return new CompanyQuoteDto(
                 c.getId(),
@@ -178,14 +180,78 @@ public class CompanyPricingService {
         return f;
     }
 
+    /** Şirketlere göre prim/indirim/teminat tabanı + teminat çarpanı. */
     private Map<String, CompanyStrategy> defaultStrategies() {
         Map<String, CompanyStrategy> m = new HashMap<>();
-        m.put("ECO", new CompanyStrategy(bd(0.95), bd(0.08), bd(400), bd(600_000)));
-        m.put("DNG", new CompanyStrategy(bd(1.00), bd(0.05), bd(300), bd(700_000)));
-        m.put("PRF", new CompanyStrategy(bd(1.05), bd(0.04), bd(300), bd(800_000)));
-        m.put("PRM", new CompanyStrategy(bd(1.12), bd(0.06), bd(500), bd(1_000_000)));
-        m.put("DEFAULT", new CompanyStrategy(bd(1.00), bd(0.00), null, bd(600_000)));
+        //                 factor  disc    maxDisc  covBase   covMult
+        m.put("ECO",     new CompanyStrategy(bd(0.95), bd(0.08), bd(400),  bd(600_000),  bd(0.90)));
+        m.put("DNG",     new CompanyStrategy(bd(1.00), bd(0.05), bd(300),  bd(700_000),  bd(1.00)));
+        m.put("PRF",     new CompanyStrategy(bd(1.05), bd(0.04), bd(300),  bd(800_000),  bd(1.10)));
+        m.put("PRM",     new CompanyStrategy(bd(1.12), bd(0.06), bd(500),  bd(1_000_000),bd(1.25)));
+        m.put("DEFAULT", new CompanyStrategy(bd(1.00), bd(0.00), null,      bd(600_000),  bd(1.00)));
         return m;
+    }
+
+    /* ---------- Teminat Hesabı ---------- */
+
+    /** Kişi başı bedeni teminatı: şirket stratejisi + risk + kullanım etkileri. */
+    private BigDecimal coverageForCompany(Quote q, Vehicle v, CompanyStrategy s) {
+        BigDecimal cov = s.coverageBase
+                .multiply(s.coverageMultiplier)
+                .multiply(coverageRiskFactor(q))
+                .multiply(coverageVehicleFactor(v));
+
+        // 10.000 TL adımına yuvarla
+        cov = stepRound(cov, bd(10_000));
+
+        // Min / Max sınırla (örn. 400k–1.5M)
+        BigDecimal min = bd(400_000);
+        BigDecimal max = bd(1_500_000);
+        if (cov.compareTo(min) < 0) cov = min;
+        if (cov.compareTo(max) > 0) cov = max;
+
+        return cov.setScale(0, RoundingMode.HALF_UP);
+    }
+
+    /** Risk seviyesine göre teminat çarpanı. */
+    private BigDecimal coverageRiskFactor(Quote q) {
+        String level = String.valueOf(q.getRiskLevel()).toLowerCase(Locale.ROOT);
+        return switch (level) {
+            case "low"  -> bd(1.15); // düşük risk → daha yüksek teminat
+            case "high" -> bd(0.85); // yüksek risk → bir miktar düşür
+            default     -> bd(1.00); // medium/unknown
+        };
+    }
+
+    /** Kullanım & yakıt tipine göre teminat çarpanı. */
+    private BigDecimal coverageVehicleFactor(Vehicle v) {
+        if (v == null) return bd(1.00);
+        BigDecimal f = bd(1.00);
+
+        UsageType usage = v.getUsage();
+        if (usage != null) {
+            switch (usage) {
+                case COMMERCIAL -> f = f.multiply(bd(0.95)); // ticari kullanımda biraz düş
+                case TAXI       -> f = f.multiply(bd(0.90));
+                default -> { /* PERSONAL vs. */ }
+            }
+        }
+
+        FuelType fuel = v.getFuelType();
+        if (fuel == FuelType.ELECTRIC) {
+            f = f.multiply(bd(1.05)); // elektrikliye küçük bonus
+        }
+
+        return f;
+    }
+
+    private static BigDecimal stepRound(BigDecimal value, BigDecimal step) {
+        if (step == null || BigDecimal.ZERO.compareTo(step) == 0) return value.setScale(0, RoundingMode.HALF_UP);
+        BigDecimal[] div = value.divideAndRemainder(step);
+        BigDecimal half = step.divide(bd(2), RoundingMode.HALF_UP);
+        return (div[1].compareTo(half) >= 0)
+                ? div[0].add(bd(1)).multiply(step)
+                : div[0].multiply(step);
     }
 
     /* ---------- Util ---------- */
@@ -204,6 +270,7 @@ public class CompanyPricingService {
             BigDecimal companyFactor,
             BigDecimal discountRate,
             BigDecimal maxDiscount,
-            BigDecimal coverageBase
+            BigDecimal coverageBase,
+            BigDecimal coverageMultiplier
     ) {}
 }

@@ -1,3 +1,4 @@
+// src/components/InsuranceComparison/CompanyCard.tsx
 import React from 'react';
 import { Shield, Star, Award, CheckCircle, Phone, Globe } from 'lucide-react';
 import { Quote, InsuranceCompany } from '../../types';

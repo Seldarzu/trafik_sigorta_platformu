@@ -134,7 +134,7 @@ const InsuranceComparison: React.FC<InsuranceComparisonProps> = ({
         actionBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 50);
     } catch (e: any) {
-      setErr(e?.response?.data?.message || e?.message || 'Şirket seçilirken hata oluştu');
+      setErr(e?.response?.data?.message || e?.message || 'Şirket seçilirken hata oluştur');
     } finally {
       setSelecting(null);
     }
@@ -152,31 +152,29 @@ const InsuranceComparison: React.FC<InsuranceComparisonProps> = ({
     return handleCompanySelectCore(backendId, usedId);
   };
 
- 
+  const handlePolicize = async () => {
+    if (!selectedCompany) return;
+    try {
+      setCreating(true);
+      setErr(null);
+      setCreateMsg(null);
 
+      // 1) Önce teklifi finalize et (SOLD)
+      const finalized = await quoteService.finalize(quote.id);
 
-const handlePolicize = async () => {
-  if (!selectedCompany) return;
-  try {
-    setCreating(true);
-    setErr(null);
-    setCreateMsg(null);
+      // 2) Sonra poliçe oluştur
+      const startDate = new Date().toISOString().slice(0, 10);
+      const policy = await PolicyService.createFromQuote(finalized.id, startDate);
 
-    // 1) Önce teklifi finalize et (SOLD)
-    const finalized = await quoteService.finalize(quote.id);
+      setCreateMsg(`Poliçe oluşturuldu (No: ${policy.policyNumber ?? policy.id ?? ''}).`);
+    } catch (e: any) {
+      setErr(e?.response?.data?.message || e?.message || 'Poliçe oluşturulamadı');
+    } finally {
+      setCreating(false);
+    }
+  };
 
-    // 2) Sonra poliçe oluştur
-    const startDate = new Date().toISOString().slice(0, 10);
-    const policy = await PolicyService.createFromQuote(finalized.id, startDate);
-
-    setCreateMsg(`Poliçe oluşturuldu (No: ${policy.policyNumber ?? policy.id ?? ''}).`);
-  } catch (e: any) {
-    setErr(e?.response?.data?.message || e?.message || 'Poliçe oluşturulamadı');
-  } finally {
-    setCreating(false);
-  }
-};
-
+  // “en iyi” değerlerin kendisi (bilgilendirme kartları için)
   const bestPrice = companyQuotes.length
     ? companyQuotes.reduce((best, cur) =>
         (cur.finalPremium ?? Infinity) < (best.finalPremium ?? Infinity) ? cur : best
@@ -191,6 +189,26 @@ const handlePolicize = async () => {
           : best
       )
     : undefined;
+
+  // === Rozetleri tek karta sabitle (eşitlikte ilk kart) ===
+  const bestPriceId =
+    companyQuotes.length
+      ? companyQuotes.reduce((bestId, q) => {
+          const best = companyQuotes.find((x) => x.id === bestId) ?? companyQuotes[0];
+          return (q.finalPremium ?? Infinity) < (best.finalPremium ?? Infinity) ? q.id : bestId;
+        }, companyQuotes[0].id)
+      : undefined;
+
+  const bestCoverageId =
+    companyQuotes.length
+      ? companyQuotes.reduce((bestId, q) => {
+          const best = companyQuotes.find((x) => x.id === bestId) ?? companyQuotes[0];
+          const qv = q.coverageDetails?.personalInjuryPerPerson ?? 0;
+          const bv = best.coverageDetails?.personalInjuryPerPerson ?? 0;
+          // eşitlikte önceki (ilk) korunur
+          return qv > bv ? q.id : bestId;
+        }, companyQuotes[0].id)
+      : undefined;
 
   if (loading) {
     return (
@@ -328,14 +346,9 @@ const handlePolicize = async () => {
                       company={cmp}
                       onSelect={() => handleCompanySelect(backendId, cmp.id)}
                       isSelected={selectedCompany === cmp.id}
-                      isBestPrice={
-                        companyQuote.finalPremium ===
-                        ((bestPrice?.finalPremium ?? companyQuote.finalPremium))
-                      }
-                      isBestCoverage={
-                        (companyQuote.coverageDetails?.personalInjuryPerPerson || 0) ===
-                        (bestCoverage?.coverageDetails?.personalInjuryPerPerson || 0)
-                      }
+                      // *** Rozetler artık tek karta ***
+                      isBestPrice={companyQuote.id === bestPriceId}
+                      isBestCoverage={companyQuote.id === bestCoverageId}
                       selecting={selecting === backendId}
                     />
                   );
