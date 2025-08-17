@@ -9,7 +9,7 @@ export interface CompanyCardProps {
   isSelected?: boolean;
   isBestPrice?: boolean;
   isBestCoverage?: boolean;
-  selecting?: boolean; // async seçim durumunu göstermek için
+  selecting?: boolean;
 }
 
 const CompanyCard: React.FC<CompanyCardProps> = ({
@@ -23,38 +23,29 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
 }) => {
   const getRiskLevelColor = (level?: string) => {
     switch (level) {
-      case 'low':
-        return 'from-green-500 to-emerald-500';
-      case 'medium':
-        return 'from-yellow-500 to-orange-500';
-      case 'high':
-        return 'from-red-500 to-pink-500';
-      default:
-        return 'from-gray-500 to-slate-500';
+      case 'low': return 'from-green-500 to-emerald-500';
+      case 'medium': return 'from-yellow-500 to-orange-500';
+      case 'high': return 'from-red-500 to-pink-500';
+      default: return 'from-gray-500 to-slate-500';
     }
   };
 
   const getRiskLevelText = (level?: string) => {
     switch (level) {
-      case 'low':
-        return 'Düşük Risk';
-      case 'medium':
-        return 'Orta Risk';
-      case 'high':
-        return 'Yüksek Risk';
-      default:
-        return 'Belirsiz';
+      case 'low': return 'Düşük Risk';
+      case 'medium': return 'Orta Risk';
+      case 'high': return 'Yüksek Risk';
+      default: return 'Belirsiz';
     }
   };
 
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
+  const renderStars = (rating: number) =>
+    Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
         className={`h-4 w-4 ${i < Math.floor(rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
       />
     ));
-  };
 
   return (
     <div
@@ -89,15 +80,13 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
               <div className="flex items-center">
                 {renderStars(company.contactInfo?.rating || 4)}
               </div>
-              <span className="text-sm text-gray-600">
-                ({company.contactInfo?.rating || 4}/5)
-              </span>
+              <span className="text-sm text-gray-600">({company.contactInfo?.rating || 4}/5)</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Price Section */}
+      {/* Price */}
       <div className="px-6 pb-4">
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
           <div className="flex items-center justify-between mb-2">
@@ -117,7 +106,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
         </div>
       </div>
 
-      {/* Coverage Highlights */}
+      {/* Coverage highlights */}
       <div className="px-6 pb-4">
         <h4 className="font-semibold text-gray-900 mb-3">Teminat Özeti</h4>
         <div className="space-y-2">
@@ -146,7 +135,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
         </div>
       </div>
 
-      {/* Risk Assessment */}
+      {/* Risk */}
       <div className="px-6 pb-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-gray-700">Risk Değerlendirmesi</span>
@@ -163,7 +152,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
         </span>
       </div>
 
-      {/* Contact Info */}
+      {/* Contact */}
       <div className="px-6 pb-4">
         <div className="flex items-center space-x-4 text-sm text-gray-600">
           <div className="flex items-center">
@@ -177,7 +166,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
         </div>
       </div>
 
-      {/* Action Button */}
+      {/* Action */}
       <div className="px-6 pb-6">
         <button
           onClick={onSelect}

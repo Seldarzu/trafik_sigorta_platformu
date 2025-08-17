@@ -10,8 +10,11 @@ import com.trafik.teklif_api.repository.*;
 import com.trafik.teklif_api.service.PolicyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @RestController
@@ -70,38 +73,49 @@ public class PolicyController {
 
     @GetMapping("/search")
     public List<PolicyResponse> search(@RequestParam Optional<String> text,
-                                    @RequestParam Optional<String> status,
-                                    @RequestParam Optional<java.util.UUID> customerId,
-                                    @RequestParam Optional<java.time.LocalDate> from,
-                                    @RequestParam Optional<java.time.LocalDate> to,
-                                    @RequestParam(defaultValue = "0") int page,
-                                    @RequestParam(defaultValue = "10") int size) {
+                                       @RequestParam Optional<String> status,
+                                       @RequestParam Optional<java.util.UUID> customerId,
+                                       @RequestParam Optional<java.time.LocalDate> from,
+                                       @RequestParam Optional<java.time.LocalDate> to,
+                                       @RequestParam(defaultValue = "0") int page,
+                                       @RequestParam(defaultValue = "10") int size) {
         return service.search(text, status, customerId, from, to, page, size);
     }
 
     // ------------------- Ek işlevler (repo tabanlı) -------------------
 
-    /** Tekliften poliçe oluşturur (ENTITY döner). */
+    /**
+     * Tekliften poliçe oluşturur — DTO (PolicyResponse) döner.
+     * - Quote SOLD değilse:
+     *    - Şirket seçilmediyse 400
+     *    - Seçildiyse otomatik SOLD yap
+     */
     @PostMapping("/create-from-quote")
-    public Policy fromQuote(@Valid @RequestBody CreatePolicyFromQuoteRequest req) {
+    public PolicyResponse fromQuote(@Valid @RequestBody CreatePolicyFromQuoteRequest req) {
         // Quote id in DTO UUID gelmiş, bizde String; toString yeterli
         String quoteId = req.quoteId().toString();
         Quote q = quoteRepo.findById(quoteId)
-                .orElseThrow(() -> new IllegalStateException("Teklif bulunamadı: " + quoteId));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Teklif bulunamadı: " + quoteId));
 
+        // Quote finalize/validation
         if (q.getStatus() != QuoteStatus.SOLD) {
-            throw new IllegalStateException("Quote must be finalized (SOLD).");
+            if (q.getSelectedCompanyId() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Select a company first.");
+            }
+            q.setStatus(QuoteStatus.SOLD);
+            quoteRepo.save(q);
         }
 
         UUID companyId = q.getSelectedCompanyId();
         if (companyId == null) {
-            throw new IllegalStateException("No company selected for the quote.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No company selected for the quote.");
         }
 
         Policy p = new Policy();
         p.setQuote(q);
         p.setCustomer(q.getCustomer());
-        p.setCompany(companyRepo.findById(companyId).orElseThrow());
+        p.setCompany(companyRepo.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Company not found: " + companyId)));
         p.setAgent(q.getAgent());
         p.setVehicle(q.getVehicle());
         p.setDriver(q.getDriver());
@@ -113,11 +127,16 @@ public class PolicyController {
         p.setFinalPremium(q.getFinalPremium());
         p.setCoverageAmount(q.getCoverageAmount());
 
+        // Başlangıç tarihi zorunlu — CreatePolicyFromQuoteRequest.startDate
+        if (req.startDate() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate is required.");
+        }
         p.setStartDate(req.startDate());
         p.setEndDate(req.startDate().plusYears(1));
         p.setStatus(PolicyStatus.ACTIVE);
 
-        return repo.save(p);
+        Policy saved = repo.save(p);
+        return mapToResponse(saved);
     }
 
     /** Poliçe taksitleri (ENTITY) */
@@ -153,5 +172,47 @@ public class PolicyController {
         Policy p = repo.findById(id).orElseThrow();
         p.setStatus(PolicyStatus.CANCELLED);
         return repo.save(p);
+    }
+
+    /* ------------ Controller içi küçük mapper: Entity -> DTO ------------ */
+    private PolicyResponse mapToResponse(Policy p) {
+        String quoteIdStr = (p.getQuote() != null) ? p.getQuote().getId() : null;
+        UUID customerId = (p.getCustomer() != null) ? p.getCustomer().getId() : null;
+
+        LocalDateTime startDt = p.getStartDate() != null ? p.getStartDate().atStartOfDay() : null;
+        LocalDateTime endDt = p.getEndDate() != null ? p.getEndDate().atStartOfDay() : null;
+        LocalDateTime created = p.getCreatedAt() != null ? p.getCreatedAt().toLocalDateTime() : null;
+
+        VehicleSummary v = null;
+        if (p.getVehicle() != null) {
+            var veh = p.getVehicle();
+            v = new VehicleSummary(veh.getBrand(), veh.getModel(), veh.getYear(), veh.getPlateNumber());
+        }
+        DriverSummary d = null;
+        if (p.getDriver() != null) {
+            var dr = p.getDriver();
+            d = new DriverSummary(dr.getFirstName(), dr.getLastName(), dr.getProfession(),
+                    dr.isHasAccidents(), dr.isHasViolations());
+        }
+
+        String companyName = (p.getCompany() != null) ? p.getCompany().getName() : null;
+
+        return new PolicyResponse(
+                p.getId(),
+                quoteIdStr,
+                customerId,
+                p.getPolicyNumber(),
+                p.getFinalPremium(),
+                p.getCoverageAmount(),
+                p.getTotalDiscount(),
+                p.getStatus(),
+                p.getPaymentStatus(),
+                startDt,
+                endDt,
+                created,
+                v,
+                d,
+                companyName
+        );
     }
 }

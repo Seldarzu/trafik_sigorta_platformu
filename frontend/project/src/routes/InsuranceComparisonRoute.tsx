@@ -36,7 +36,8 @@ export default function InsuranceComparisonRoute() {
       quote={quote}
       onBack={() => navigate('/teklifler')}
       onCompanySelect={(_companyId, updatedQuote) => {
-        navigate(`/teklifler?highlight=${updatedQuote.id}`);
+        // 👇 seçimden sonra sayfa değiştirmiyoruz; sadece yerel state’i güncelliyoruz
+        setQuote(updatedQuote);
       }}
     />
   );

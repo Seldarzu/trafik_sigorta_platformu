@@ -90,13 +90,11 @@ export interface Discount {
 }
 
 // ==============================
-// InsuranceCompany (TEK tanım, tüm ihtiyaçları kapsar)
+// InsuranceCompany
 // ==============================
 export interface InsuranceCompany {
   id: ID;
   name: string;
-
-  // Projede kullanılan alanlar:
   isActive?: boolean;
   code?: string;
   contactInfo?: {
@@ -104,32 +102,26 @@ export interface InsuranceCompany {
     website?: string;
     rating?: number;
   };
-
-  // Ek alanlar (kullanıldığı yerler için opsiyonel):
   logoUrl?: string;
-  rating?: number;         // alternatif rating alanı
+  rating?: number;
   totalReviews?: number;
   contactEmail?: string;
   contactPhone?: string;
   websiteUrl?: string;
-
   createdAt?: ISODate;
   updatedAt?: ISODate;
 }
 
 // ==============================
-// Quote (UI’nin kullandığı esnek yapı – alanların çoğu opsiyonel)
+// Quote
 // ==============================
 export interface Quote {
   id: ID;
-
-  // ilişkisel id’ler
   customerId?: ID | null;
   vehicleId?: ID | null;
   driverId?: ID | null;
   agentId?: ID | null;
 
-  // sayısallar
   premium: number;
   finalPremium: number;
   totalDiscount?: number;
@@ -141,11 +133,9 @@ export interface Quote {
   coverageAmount?: number;
   createdAt?: ISODate;
 
-  // özetler (bazı ekranlar bunları kullanıyor)
   vehicle?: VehicleSummary;
   driver?: DriverSummary;
 
-  // karşılaştırma ekranlarında kullanılıyor
   companyName?: string;
   coverageDetails?: {
     personalInjuryPerPerson?: number;
@@ -158,7 +148,6 @@ export interface Quote {
     personalAccident?: number;
   };
 
-  // indirimler (CompanyCard’da kullanılıyor)
   discounts?: Discount[];
   uniqueRefNo?: string;
   validUntil?: ISODate;
@@ -168,7 +157,6 @@ export interface Quote {
   recommendationScore?: number;
 }
 
-// Teklif oluşturma isteği
 export interface CreateQuoteRequest {
   customerId: ID | null | string;
   vehicleId: ID | string;
@@ -180,7 +168,7 @@ export interface CreateQuoteRequest {
 }
 
 // ==============================
-// Policy / Customer / Analytics vb. (Dashboard ve diğer sayfalar için)
+// Policy / Customer / Analytics
 // ==============================
 export interface PolicyInstallment {
   id: ID;
@@ -418,6 +406,7 @@ export interface CreateDriverDto {
   hasViolations?: boolean;
   violationCount?: number;
 }
+
 export interface CustomerResponse {
   id: number | string;
   name: string;
@@ -431,7 +420,8 @@ export interface QuoteResponse {
   riskScore: number;
   status: string;
 }
-// --- Yeni: araç create DTO'su ---
+
+// Araç & Teklif create DTO'ları
 export interface CreateVehicleDto {
   plateNumber: string;
   brand: string;
@@ -443,7 +433,6 @@ export interface CreateVehicleDto {
   cityCode?: string;
 }
 
-// --- Yeni: teklif create DTO'su (nested driver & vehicle) ---
 export interface CreateQuoteDto {
   customerId: ID | string;
   riskScore: number;

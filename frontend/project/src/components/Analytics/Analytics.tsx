@@ -1,13 +1,10 @@
-// src/components/analytics/Analytics.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { BarChart3, TrendingUp, DollarSign, Target, Users, Award, Zap } from 'lucide-react';
 import RevenueChart from './RevenueChart';
 import RiskDistributionChart from './RiskDistributionChart';
 import PerformanceMetrics from './PerformanceMetrics';
 import TopBrands from './TopBrands';
-import { AnalyticsService } from '../../services/AnalyticsService';
-
-type Period = 'week'|'month'|'quarter'|'year';
+import { AnalyticsService, Period } from '../../services/AnalyticsService';
 
 const RISK_I18N: Record<'low'|'medium'|'high', {label:string;color:string}> = {
   low:    { label: 'Düşük Risk',  color: '#10B981' },
@@ -20,7 +17,6 @@ const Analytics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  // server verileri
   const [summary, setSummary] = useState<{totalRevenue:number; totalPolicies:number; conversionRate:number; averagePremium:number} | null>(null);
   const [monthly, setMonthly] = useState<{month:string; revenue:number; policies:number; quotes:number}[]>([]);
   const [risk, setRisk] = useState<{level:'low'|'medium'|'high'; count:number; percentage:number; color?:string}[]>([]);
@@ -28,7 +24,6 @@ const Analytics: React.FC = () => {
   const [topBrands, setTopBrands] = useState<{brand:string; count:number; revenue:number}[]>([]);
   const [segments, setSegments] = useState<{segment:string; count:number; value:number; color?:string}[]>([]);
 
-  // quick stats hesaplama
   const quickStats = useMemo(() => {
     const s = summary ?? { totalRevenue: 0, totalPolicies: 0, conversionRate: 0, averagePremium: 0 };
     return [
@@ -63,7 +58,6 @@ const Analytics: React.FC = () => {
     ];
   }, [summary]);
 
-  // risk verisini görselle uygun hale getir
   const riskForChart = useMemo(() => {
     return risk.map(r => ({
       level: RISK_I18N[r.level].label,
@@ -77,10 +71,7 @@ const Analytics: React.FC = () => {
     setLoading(true);
     setErr(null);
     try {
-      // 🔧 Servis metod adları düzeltildi
-      const [
-        s, m, r, p, b, seg
-      ] = await Promise.all([
+      const [s, m, r, p, b, seg] = await Promise.all([
         AnalyticsService.getSummary(),
         AnalyticsService.getMonthly(period),
         AnalyticsService.getRiskDistribution(period),
@@ -90,7 +81,11 @@ const Analytics: React.FC = () => {
       ]);
       setSummary(s);
       setMonthly(m);
-      setRisk(r);
+      // 🔥 burada düzeltme yapıyoruz
+      setRisk(r.map((item: any) => ({
+        ...item,
+        level: item.level.toLowerCase() as 'low' | 'medium' | 'high'
+      })));
       setPerf(p);
       setTopBrands(b);
       setSegments(seg);
@@ -144,7 +139,7 @@ const Analytics: React.FC = () => {
           </div>
         </div>
 
-        {/* Hata/Loading */}
+        {/* Hata / Loading */}
         {err && (
           <div className="mb-6 mx-auto max-w-3xl bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-center">
             {err}
@@ -184,10 +179,9 @@ const Analytics: React.FC = () => {
           </div>
         )}
 
-        {/* Charts Grid */}
+        {/* Charts */}
         {!loading && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {/* Revenue Chart */}
             <div className="bg-white p-6 rounded-xl shadow-lg">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-gray-900 flex items-center">
@@ -204,7 +198,6 @@ const Analytics: React.FC = () => {
               <RevenueChart data={monthly} />
             </div>
 
-            {/* Risk Distribution */}
             <div className="bg-white p-6 rounded-xl shadow-lg">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-gray-900 flex items-center">
@@ -217,7 +210,7 @@ const Analytics: React.FC = () => {
           </div>
         )}
 
-        {/* Performance Metrics and Top Brands */}
+        {/* Performance + Brands */}
         {!loading && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <PerformanceMetrics metrics={perf} />
@@ -249,7 +242,7 @@ const Analytics: React.FC = () => {
           </div>
         )}
 
-        {/* Action Items (statik öneriler) */}
+        {/* Actions */}
         <div className="mt-8 bg-gradient-to-r from-blue-500 to-purple-500 p-6 rounded-xl text-white">
           <div className="flex items-center justify-between">
             <div>
@@ -260,7 +253,7 @@ const Analytics: React.FC = () => {
               <ul className="space-y-1 text-sm opacity-90">
                 <li>• Dönüşüm oranını %70'e çıkarmak için potansiyel müşteri takibini artırın</li>
                 <li>• Yüksek risk müşterilerinde özel kampanyalar düzenleyin</li>
-                <li>• Popüler markalarda cross‑sell fırsatlarını değerlendirin</li>
+                <li>• Popüler markalarda cross-sell fırsatlarını değerlendirin</li>
                 <li>• Bronze segmenti Silver’a yükseltmek için loyalty programı başlatın</li>
               </ul>
             </div>
@@ -270,6 +263,7 @@ const Analytics: React.FC = () => {
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );

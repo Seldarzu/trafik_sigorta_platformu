@@ -152,25 +152,30 @@ const InsuranceComparison: React.FC<InsuranceComparisonProps> = ({
     return handleCompanySelectCore(backendId, usedId);
   };
 
-  /** POLİÇELEŞTİR — şirket seçildikten sonra aktif */
-  const handlePolicize = async () => {
-    if (!selectedCompany) return;
-    try {
-      setCreating(true);
-      setErr(null);
-      setCreateMsg(null);
+ 
 
-      const startDate = new Date().toISOString().slice(0, 10);
-      const policy = await PolicyService.createFromQuote(quote.id, startDate);
 
-      setCreateMsg(`Poliçe oluşturuldu (No: ${policy.policyNumber ?? policy.id ?? ''}).`);
-      // örn: navigate('/policies') burada yapılabilir
-    } catch (e: any) {
-      setErr(e?.response?.data?.message || e?.message || 'Poliçe oluşturulamadı');
-    } finally {
-      setCreating(false);
-    }
-  };
+const handlePolicize = async () => {
+  if (!selectedCompany) return;
+  try {
+    setCreating(true);
+    setErr(null);
+    setCreateMsg(null);
+
+    // 1) Önce teklifi finalize et (SOLD)
+    const finalized = await quoteService.finalize(quote.id);
+
+    // 2) Sonra poliçe oluştur
+    const startDate = new Date().toISOString().slice(0, 10);
+    const policy = await PolicyService.createFromQuote(finalized.id, startDate);
+
+    setCreateMsg(`Poliçe oluşturuldu (No: ${policy.policyNumber ?? policy.id ?? ''}).`);
+  } catch (e: any) {
+    setErr(e?.response?.data?.message || e?.message || 'Poliçe oluşturulamadı');
+  } finally {
+    setCreating(false);
+  }
+};
 
   const bestPrice = companyQuotes.length
     ? companyQuotes.reduce((best, cur) =>

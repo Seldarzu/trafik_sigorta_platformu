@@ -13,7 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.YearMonth;
 import java.time.ZoneOffset;
 
 import java.util.*;
@@ -57,22 +59,140 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 averagePremium
         );
     }
+@Override
+@Transactional(readOnly = true)
+public List<MonthlyDto> getMonthly(String period) {
+    var localeTR = java.util.Locale.forLanguageTag("tr-TR");
 
-    /* ===================== MONTHLY ===================== */
-    // Not: DTO şekli net değil (record). Derlenmesi için boş liste döndürüyoruz.
-    @Override
-    @Transactional(readOnly = true)
-    public List<MonthlyDto> getMonthly(String period) {
-        return Collections.emptyList();
+    java.time.LocalDate today = java.time.LocalDate.now();
+
+    // --- Ay bazlı ---
+    if ("month".equalsIgnoreCase(period) || period == null) {
+        java.time.YearMonth currYm = java.time.YearMonth.from(today);
+
+        List<java.time.YearMonth> last12 =
+                java.util.stream.IntStream.rangeClosed(0, 11)
+                        .mapToObj(i -> currYm.minusMonths(11 - i))
+                        .toList();
+
+        class Tot { BigDecimal revenue = BigDecimal.ZERO; long policies = 0; long quotes = 0; }
+        Map<java.time.YearMonth, Tot> buckets = new LinkedHashMap<>();
+        for (var ym : last12) buckets.put(ym, new Tot());
+
+        for (var p : policyRepo.findAll()) {
+            if (p == null || p.getCreatedAt() == null) continue;
+            YearMonth ym = YearMonth.from(p.getCreatedAt().toLocalDate());
+            Tot t = buckets.get(ym);
+            if (t == null) continue;
+            if (p.getFinalPremium() != null)
+                t.revenue = t.revenue.add(p.getFinalPremium());
+            t.policies++;
+        }
+
+        for (var q : quoteRepo.findAll()) {
+            if (q == null || q.getCreatedAt() == null) continue;
+            YearMonth ym = YearMonth.from(q.getCreatedAt().toLocalDate());
+            Tot t = buckets.get(ym);
+            if (t == null) continue;
+            t.quotes++;
+        }
+
+        java.time.format.DateTimeFormatter monthFmt =
+                java.time.format.DateTimeFormatter.ofPattern("LLL", localeTR);
+
+        List<MonthlyDto> result = new ArrayList<>();
+        for (var ym : last12) {
+            String label = capitalizeTR(monthFmt.format(ym.atDay(1)), localeTR);
+            Tot t = buckets.get(ym);
+            result.add(new MonthlyDto(label,
+                    t.revenue.setScale(2, RoundingMode.HALF_UP).longValue(),
+                    t.policies, t.quotes));
+        }
+        return result;
     }
 
-    /* ===================== RISK DISTRIBUTION ===================== */
-    // Not: RiskDto imzası paylaşılmadığı için uyumlu bir boş liste döndürüyoruz.
-    @Override
-    @Transactional(readOnly = true)
-    public List<RiskDto> getRiskDistribution(String period) {
-        return Collections.emptyList();
+    // --- Hafta bazlı ---
+    if ("week".equalsIgnoreCase(period)) {
+        var wf = java.time.temporal.WeekFields.ISO; // Pazartesi başlangıç
+        java.time.LocalDate curr = today;
+
+        List<java.time.LocalDate> weeks =
+                java.util.stream.IntStream.rangeClosed(0, 7) // son 8 hafta
+                        .mapToObj(i -> curr.minusWeeks(7 - i))
+                        .toList();
+
+        class Tot { BigDecimal revenue = BigDecimal.ZERO; long policies = 0; long quotes = 0; }
+        Map<Integer, Tot> buckets = new LinkedHashMap<>();
+        for (var w : weeks) {
+            int weekNum = w.get(wf.weekOfWeekBasedYear());
+            buckets.put(weekNum, new Tot());
+        }
+
+        for (var p : policyRepo.findAll()) {
+            if (p == null || p.getCreatedAt() == null) continue;
+            LocalDate d = p.getCreatedAt().toLocalDate();
+            int w = d.get(wf.weekOfWeekBasedYear());
+            Tot t = buckets.get(w);
+            if (t == null) continue;
+            if (p.getFinalPremium() != null)
+                t.revenue = t.revenue.add(p.getFinalPremium());
+            t.policies++;
+        }
+
+        for (var q : quoteRepo.findAll()) {
+            if (q == null || q.getCreatedAt() == null) continue;
+            LocalDate d = q.getCreatedAt().toLocalDate();
+            int w = d.get(wf.weekOfWeekBasedYear());
+            Tot t = buckets.get(w);
+            if (t == null) continue;
+            t.quotes++;
+        }
+
+        List<MonthlyDto> result = new ArrayList<>();
+        for (var entry : buckets.entrySet()) {
+            Tot t = entry.getValue();
+            String label = "Hafta " + entry.getKey();
+            result.add(new MonthlyDto(label,
+                    t.revenue.setScale(2, RoundingMode.HALF_UP).longValue(),
+                    t.policies, t.quotes));
+        }
+        return result;
     }
+
+    return List.of();
+}
+
+/** Türkçe için baş harfi büyültme yardımcı metodu */
+private static String capitalizeTR(String s, java.util.Locale tr) {
+    if (s == null || s.isBlank()) return s;
+    // "ı" -> "I" vb. için locale’li çözüm
+    String first = s.substring(0, 1).toUpperCase(tr);
+    return first + s.substring(1);
+}
+
+        
+        @Override
+        @Transactional(readOnly = true)
+        public List<RiskDto> getRiskDistribution(String period) {
+        long low    = customerRepo.countByRiskProfile(RiskProfile.LOW);
+        long medium = customerRepo.countByRiskProfile(RiskProfile.MEDIUM);
+        long high   = customerRepo.countByRiskProfile(RiskProfile.HIGH);
+
+        long total = low + medium + high;
+        if (total == 0) {
+                return List.of(
+                new RiskDto("low", 0, 0.0, "#10B981"),
+                new RiskDto("medium", 0, 0.0, "#F59E0B"),
+                new RiskDto("high", 0, 0.0, "#EF4444")
+                );
+        }
+
+        return List.of(
+                new RiskDto("low", low,   round((low   * 100.0) / total, 1), "#10B981"),
+                new RiskDto("medium", medium, round((medium * 100.0) / total, 1), "#F59E0B"),
+                new RiskDto("high", high,  round((high  * 100.0) / total, 1), "#EF4444")
+        );
+        }
 
     // Ek yardımcı (arayüzde yoksa @Override KOYMAYIN)
     @Transactional(readOnly = true)
