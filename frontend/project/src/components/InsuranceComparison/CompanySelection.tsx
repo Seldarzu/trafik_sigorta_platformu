@@ -1,17 +1,17 @@
-// src/components/InsuranceComparison/CompanySelection.tsx
 import React, { useState } from 'react';
 import { CheckCircle, Star, Award, Shield, TrendingUp, Phone, Globe, Mail } from 'lucide-react';
 import { Quote, InsuranceCompany } from '../../types';
-import { QuoteService } from '../../services/QuoteService';
+ import { QuoteService } from '../../services/QuoteService';
 import { PolicyService } from '../../services/policyService';
 
+
 export interface CompanySelectionProps {
-  quoteId: string;                     // << EKLENDİ
+  quoteId: string;
   quotes: Quote[];
   companies: InsuranceCompany[];
   selectedCompany: string | null;
   onSelect: (companyId: string) => void | Promise<void>;
-  onPolicyCreated?: (policyId: string) => void; // << EKLENDİ (örn. navigate)
+  onPolicyCreated?: (policyId: string) => void;
   selectingId?: string | null;
 }
 
@@ -43,39 +43,50 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({
 
   const getRecommendedCompany = () => {
     if (!quotes.length) return undefined;
-    const scoredCompanies = companies.map(company => {
-      const quote = getCompanyQuote(company.name);
-      if (!quote) return { company, score: 0 };
-      const priceScore = ((3000 - (quote.finalPremium || 0)) / 3000) * 40;
-      const coverageScore = ((quote.coverageDetails?.personalInjuryPerPerson || 0) / 1_000_000) * 30;
+    const scored = companies.map(company => {
+      const q = getCompanyQuote(company.name);
+      if (!q) return { company, score: 0 };
+      const priceScore = ((3000 - (q.finalPremium || 0)) / 3000) * 40;
+      const coverageScore = ((q.coverageDetails?.personalInjuryPerPerson || 0) / 1_000_000) * 30;
       const ratingScore = (company.contactInfo?.rating || 0) * 6;
       return { company, score: priceScore + coverageScore + ratingScore };
     });
-    return scoredCompanies.reduce((best, cur) => (cur.score > best.score ? cur : best)).company;
+    return scored.reduce((best, cur) => (cur.score > best.score ? cur : best)).company;
   };
 
   const bestPriceCompany = companies.length ? getBestPriceCompany() : undefined;
   const recommendedCompany = companies.length ? getRecommendedCompany() : undefined;
 
   const handleSelect = async (companyId: string) => {
-    // Backend’e yaz → parent state’i güncelle
-    await QuoteService.selectCompany(quoteId, companyId);
+    // Sadece parent'a haber ver—backend çağrısı parent içinde yapılır.
     await onSelect(companyId);
   };
 
-  const handlePolicize = async () => {
-    if (!selectedCompany) return;
-    try {
-      setCreating(true);
-      // Bugünü başlangıç tarihi kabul ettim; UI’dan tarih seçtirmek isterseniz prop ekleyin.
-      const today = new Date();
-      const startDate = today.toISOString().slice(0, 10); // YYYY-MM-DD
-      const policy = await PolicyService.createFromQuote(quoteId, startDate);
-      onPolicyCreated?.(policy.id); // navigate('/policies') gibi
-    } finally {
-      setCreating(false);
-    }
-  };
+  
+
+const handlePolicize = async () => {
+  if (!selectedCompany) return;
+  try {
+    setCreating(true);
+
+    // 1) Finalize (SOLD)
+    const finalized = await QuoteService.finalize(quoteId);
+
+    // 2) Poliçeyi oluştur
+    const today = new Date();
+    const startDate = today.toISOString().slice(0, 10);
+    const policy = await PolicyService.createFromQuote(finalized.id, startDate);
+
+    onPolicyCreated?.(policy.id); // istersen navigate('/policeler')
+  } catch (e: any) {
+    // Hata kullanıcıya yansısın
+    console.error(e);
+    alert(e?.response?.data?.message || e?.message || 'Poliçe oluşturulamadı');
+  } finally {
+    setCreating(false);
+  }
+};
+
 
   return (
     <div className="space-y-6">
@@ -84,7 +95,6 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({
         <p className="text-gray-600">Size en uygun sigorta şirketini seçin ve poliçeleştirin</p>
       </div>
 
-      {/* Öneriler */}
       {bestPriceCompany && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-6 rounded-xl text-white">
@@ -133,15 +143,14 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({
         </div>
       )}
 
-      {/* Şirket listesi */}
       <div className="space-y-4">
         {companies.map((company) => {
           const quote = quotes.find(q => q.companyName === company.name);
           if (!quote) return null;
 
           const isSelected = selectedCompany === company.id;
-          const isBestPrice = company.id === bestPriceCompany?.id;
-          const isRecommended = company.id === recommendedCompany?.id;
+          const isBestPrice = bestPriceCompany?.id === company.id;
+          const isRecommended = recommendedCompany?.id === company.id;
 
           return (
             <div

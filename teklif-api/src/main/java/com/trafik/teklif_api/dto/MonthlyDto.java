@@ -2,7 +2,7 @@ package com.trafik.teklif_api.dto;
 
 public record MonthlyDto(
     String month,
-    long revenue,
+    double revenue, 
     long policies,
     long quotes
 ) {}

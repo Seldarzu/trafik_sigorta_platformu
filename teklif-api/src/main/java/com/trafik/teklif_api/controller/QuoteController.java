@@ -12,7 +12,6 @@ import com.trafik.teklif_api.entity.Driver;
 import com.trafik.teklif_api.entity.InsuranceCompany;
 import com.trafik.teklif_api.entity.Quote;
 import com.trafik.teklif_api.entity.Vehicle;
-import com.trafik.teklif_api.model.enums.QuoteStatus;
 import com.trafik.teklif_api.repository.InsuranceCompanyRepository;
 import com.trafik.teklif_api.repository.QuoteRepository;
 import com.trafik.teklif_api.service.QuoteService;
@@ -24,35 +23,22 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
-/**
- * Tek bir controller altında:
- *  - Servis tabanlı uçlar (UUID) — create/list/get/update/delete/compare/company-quotes/finalize/history/duplicate/convert
- *  - Repo tabanlı şirket seçimi ucu (String quoteId) — select-company
- *
- * Notlar:
- *  - select-company ucu {quoteId}/select-company olduğu için /{id} ile çakışmaz.
- *  - Projede Quote ID tipi repository tarafında String ise, select-company metodunda @PathVariable String kullanılmalıdır.
- */
 @RestController
 @RequestMapping("/api/quotes")
 @RequiredArgsConstructor
 public class QuoteController {
 
-    // Servis tabanlı akışlar için
     private final QuoteService service;
 
-    // Repo tabanlı şirket seçimi için
-    private final QuoteRepository quoteRepo;                 // ID tipi: String
+    private final QuoteRepository quoteRepo;
     private final InsuranceCompanyRepository companyRepo;
 
-    // ----------------- CREATE -----------------
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public QuoteResponse create(@Valid @RequestBody CreateQuoteRequest req) {
         return service.create(req);
     }
 
-    // ----------------- LIST -----------------
     @GetMapping
     public List<QuoteResponse> list(
             @RequestParam(required = false) Integer limit,
@@ -65,14 +51,12 @@ public class QuoteController {
         return service.getAll(page, size);
     }
 
-    // ----------------- GET BY ID (Service katmanı UUID bekliyor) -----------------
     @GetMapping("/{id}")
     public QuoteResponse get(@PathVariable UUID id) {
         return service.getById(id)
                 .orElseThrow(() -> new RuntimeException("Quote bulunamadı: " + id));
     }
 
-    // ----------------- UPDATE -----------------
     @PutMapping("/{id}")
     public ResponseEntity<QuoteResponse> updatePartial(
             @PathVariable UUID id,
@@ -83,14 +67,12 @@ public class QuoteController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // ----------------- DELETE -----------------
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) {
         service.delete(id);
     }
 
-    // ----------------- LEGACY / ENRICHED FLOWS -----------------
     @PostMapping("/{id}/compare")
     public Map<String, Object> compare(@PathVariable UUID id) {
         return service.compare(id);
@@ -100,7 +82,6 @@ public class QuoteController {
     public List<Map<String, Object>> companyQuotes(@PathVariable UUID id) {
         return service.companyQuotes(id);
     }
-
 
     @PostMapping("/{id}/finalize")
     public QuoteResponse finalizeQuote(@PathVariable UUID id) {
@@ -129,12 +110,7 @@ public class QuoteController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // ----------------- ŞİRKET SEÇİMİ (Repo tabanlı, quoteId=String) -----------------
-    /**
-     * FE PATCH /api/quotes/{quoteId}/select-company  Body: {"companyId": "<uuid>"}
-     * Burada **Entity yerine DTO** döndürüyoruz (ByteBuddy/Lazy proxy 500'ünü engeller).
-     * Durumu SOLD yapmıyoruz; onu poliçeleştirmede yapın.
-     */
+    /** PATCH body ile şirket seçimi – FE bunu kullanıyor. */
     @PatchMapping("/{quoteId}/select-company")
     public QuoteResponse selectCompany(@PathVariable String quoteId,
                                        @Valid @RequestBody SelectCompanyRequest req) {
@@ -147,13 +123,11 @@ public class QuoteController {
                 .orElseThrow(() -> new IllegalStateException("Şirket bulunamadı: " + companyId));
 
         q.setSelectedCompanyId(companyId);
-        // q.setStatus(QuoteStatus.SOLD); // poliçe aşamasına bırakın
         q = quoteRepo.save(q);
 
         return toResponse(q, comp.getName());
     }
 
-    /* ----------------- PRIVATE: Entity -> DTO ----------------- */
     private QuoteResponse toResponse(Quote q, String selectedCompanyName) {
         Vehicle v = q.getVehicle();
         Driver d  = q.getDriver();
