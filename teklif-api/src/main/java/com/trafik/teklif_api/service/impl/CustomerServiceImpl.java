@@ -26,7 +26,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -299,7 +298,4 @@ public class CustomerServiceImpl implements CustomerService {
         );
     }
 
-    private static LocalDateTime toLocalDateTime(OffsetDateTime odt) {
-        return (odt == null) ? null : odt.toLocalDateTime();
-    }
 }

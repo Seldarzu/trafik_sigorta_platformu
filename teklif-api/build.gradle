@@ -3,6 +3,7 @@ plugins {
     id 'org.springframework.boot' version '3.5.3'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'org.flywaydb.flyway' version '9.22.1'
+    id 'jacoco'
 }
 
 group = 'com.trafik'
@@ -22,41 +23,91 @@ dependencies {
     // Spring Boot
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-   
     implementation 'org.springframework.boot:spring-boot-starter-validation'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-hibernate5:2.17.2'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
 
+    // Jackson (Hibernate tipleri için)
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-hibernate5:2.17.2'
 
     // OpenAPI / Swagger
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
 
-    // Flyway (PostgreSQL 17 ile uyumlu 9.22.1 versiyonu)
+    // Flyway
     implementation 'org.flywaydb:flyway-core:9.22.1'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
 
-    // Development tools
+    // Dev tools
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
-    // Database driver
+    // DB driver
     runtimeOnly 'org.postgresql:postgresql'
 
     // Test
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test' // JUnit 5, AssertJ, MockMvc
     testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.12.0'
+    testImplementation 'org.mockito:mockito-inline:5.2.0'
+    testImplementation 'org.assertj:assertj-core:3.26.3'
+
+    // (CI/IDE bazı durumlarda lazım oluyor)
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-flyway {
-    url      = 'jdbc:postgresql://localhost:5432/teklif_db'
-    user     = 'postgres'          // Postgres kullanıcı adınız
-    password = 'arzu1234'     // Postgres şifreniz
-    schemas  = ['public']
-    // locations default: 'classpath:db/migration'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+    testLogging { events "passed", "skipped", "failed" }
+    finalizedBy 'jacocoTestReport' // test bitince raporu üret
+}
+
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+jacocoTestReport {
+    // finalizedBy/test ilişkisi yukarıda verildiği için burada dependsOn yazmasak da olur
+    reports {
+        html.required = true
+        xml.required  = true
+        csv.required  = false
+    }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        // Proje geneli eşik – başlangıçta %60 (isteğe göre artırın)
+        rule {
+            element = 'BUNDLE'
+            limit {
+                counter = 'INSTRUCTION'
+                value   = 'COVEREDRATIO'
+                minimum = 0.60
+            }
+        }
+        // Service paketinde branch coverage eşiği
+        rule {
+            element = 'PACKAGE'
+            includes = ['com.trafik.teklif_api.service*']
+            limit {
+                counter = 'BRANCH'
+                value   = 'COVEREDRATIO'
+                minimum = 0.50
+            }
+        }
+    }
+}
+
+// `check` çalıştığında coverage eşikleri de doğrulansın
+check.dependsOn jacocoTestCoverageVerification
+
+// Flyway (lokal geliştirici ayarları)
+flyway {
+    url      = 'jdbc:postgresql://localhost:5432/teklif_db'
+    user     = 'postgres'
+    password = 'arzu1234'
+    schemas  = ['public']
 }
