@@ -35,12 +35,12 @@
 
 ```mermaid
 flowchart LR
-  U[Kullanıcı] --> FE[ Frontend (React + TS)]
-  FE -->|REST API| BE[ Spring Boot Controllers]
-  BE --> S[ Service Katmanı]
-  S --> R[Repositories]
-  R --> DB[(PostgreSQL)]
-  DB -->|Flyway| MIG[ Migration'lar]
+    U[User] --> FE[Frontend (React + TS)]
+    FE -->|REST API| BE[Spring Boot Controllers]
+    BE --> S[Service Layer]
+    S --> R[Repositories]
+    R --> DB[(PostgreSQL)]
+    DB --> MIG[Flyway Migrations]
 ```
 
 ---
@@ -167,13 +167,12 @@ cd teklif-api
 
 ```mermaid
 flowchart LR
-  U[ User] --> FE[ Frontend (React + TS)]
-  FE -->|REST API| BE[Spring Boot Controllers]
-  BE --> S[ Service Layer]
-  S --> R[ Repositories]
-  R --> DB[(PostgreSQL)]
-  DB -->|Flyway| MIG[ Migrations]
-```
+    U[User] --> FE[Frontend (React + TS)]
+    FE -->|REST API| BE[Spring Boot Controllers]
+    BE --> S[Service Layer]
+    S --> R[Repositories]
+    R --> DB[(PostgreSQL)]
+    DB --> MIG[Flyway Migrations]
 
 ---
 
