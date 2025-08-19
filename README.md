@@ -39,8 +39,8 @@ flowchart LR
   FE -->|REST API| BE[ Spring Boot Controllers]
   BE --> S[ Service Katmanı]
   S --> R[Repositories]
-  R --> DB[(🗄 PostgreSQL)]
-  DB -->|Flyway| MIG[🕊 Migration'lar]
+  R --> DB[(PostgreSQL)]
+  DB -->|Flyway| MIG[ Migration'lar]
 ```
 
 ---
@@ -168,11 +168,11 @@ cd teklif-api
 ```mermaid
 flowchart LR
   U[ User] --> FE[ Frontend (React + TS)]
-  FE -->|REST API| BE[⚙ Spring Boot Controllers]
+  FE -->|REST API| BE[Spring Boot Controllers]
   BE --> S[ Service Layer]
   S --> R[ Repositories]
-  R --> DB[(🗄 PostgreSQL)]
-  DB -->|Flyway| MIG[🕊 Migrations]
+  R --> DB[(PostgreSQL)]
+  DB -->|Flyway| MIG[ Migrations]
 ```
 
 ---
